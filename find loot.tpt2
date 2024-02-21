@@ -17,7 +17,7 @@ start:
 turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 executesync("leon.adventure:analyze loot")
 loop:
-  	leon.adventure.target_pos = s2i(sub(leon.adventure.targetPositions,0,3),0)
+    leon.adventure.target_pos = s2i(sub(leon.adventure.targetPositions,0,3),0)
     leon.adventure.targetPositions = sub(leon.adventure.targetPositions,4,a.i(len(leon.adventure.targetPositions),"-",4))
     executesync("leon.adventure:find path")
     executesync("leon.adventure:follow path")

@@ -17,7 +17,7 @@
 #distance(x,y) ({x}%19)-({y}%19)+({x}/19)-({y}/19)
 #posToVec(x) vec(i2d({x}%19),i2d({x}/19))
 #posToString(p) concat(ternary.string(len(i2s({p}))==1,"00",\
-	ternary.string(len(i2s({p}))==2,"0","")),i2s({p}))
+    ternary.string(len(i2s({p}))==2,"0","")),i2s({p}))
 #firstElementPos s2i(sub(queue,0,3),-1)
 #firstElementDir sub(queue,3,1)
 #pop queue=sub(queue,5,a.i(len(queue),"-",5))
@@ -28,50 +28,37 @@ turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 queue = concat({posToString(d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos()))))},"S:")
 field = "{lua(return string.rep("0",362))}"
 loop1:
-	curPos = {firstElementPos}
+    curPos = {firstElementPos}
     {replace(field, curPos, {firstElementDir})}
     {pop}
-	queue= concat(queue,concat(concat(concat(\
-    	ternary.string(false == adventure.isWall({posToVec({goUp})}) && \
-        	false == contains(queue,{posToString({goUp})}) && \
+    queue= concat(queue,concat(concat(concat(\
+        ternary.string(false == adventure.isWall({posToVec({goUp})}) && \
+            false == contains(queue,{posToString({goUp})}) && \
             {goUp}<361 &&\
             sub(field,{goUp},1)=="0" ,\
-           	concat({posToString({goUp})},"U:"),""),\
+            concat({posToString({goUp})},"U:"),""),\
         ternary.string(false == adventure.isWall({posToVec({goDown})}) && \
-        	false == contains(queue,{posToString({goDown})}) && \
+            false == contains(queue,{posToString({goDown})}) && \
             {goDown}>=0 &&\
             sub(field,{goDown},1)=="0" , \
-           	concat({posToString({goDown})},"D:"),"")) ,\
+            concat({posToString({goDown})},"D:"),"")) ,\
         ternary.string(false == adventure.isWall({posToVec({goRight})}) && \
-        	false == contains(queue,{posToString({goRight})}) && \
+            false == contains(queue,{posToString({goRight})}) && \
             sub(field,{goRight},1)=="0"&&\
             {distance({goRight},curPos)}<=1,\
-           	concat({posToString({goRight})},"R:"),"")),\
+            concat({posToString({goRight})},"R:"),"")),\
         ternary.string(false == adventure.isWall({posToVec({goLeft})}) && \
-        	false == contains(queue,{posToString({goLeft})}) && \
+            false == contains(queue,{posToString({goLeft})}) && \
             sub(field,{goLeft},1) == "0"&&\
             {distance({goLeft},curPos)}<=1,\
-           	concat({posToString({goLeft})},"L:"),"")))
+            concat({posToString({goLeft})},"L:"),"")))
   gotoif(loop1,len(queue)>0&&curPos!=leon.adventure.target_pos)
 loop2:
-	path=concat(sub(field,curPos,1),path)
+    path=concat(sub(field,curPos,1),path)
     curPos=ternary.int(sub(path,0,1)=="U",{goDown},ternary.int(sub(path,0,1)=="D",{goUp},\
-    	ternary.int(sub(path,0,1)=="R",{goLeft},ternary.int(sub(path,0,1)=="L",{goRight},curPos))))
+        ternary.int(sub(path,0,1)=="R",{goLeft},ternary.int(sub(path,0,1)=="L",{goRight},curPos))))
   gotoif(loop2,sub(field,curPos,1)!="S")
 leon.adventure.path = ternary.string(path=="S","",path)
 executesync("leon.adventure:refine path")
 end:
 wait(0.0)
-
-
-
-
-
-
-
-
-
-
-
-
-

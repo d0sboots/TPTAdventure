@@ -25,7 +25,7 @@ loop:
 stepCount+=1
 goto(ternary.int(stepCount>=len(leon.adventure.path)||leon.adventure.running!=1,end,ternary.int({nextDirection}=="B",bomb,ternary.int({nextDirection}=="W",wait,move))))
 move:
-	curPos = {playerPos}
+    curPos = {playerPos}
     status = {status}
     move2:
       executesync("turbo stop")
@@ -33,16 +33,14 @@ move:
       executesync("turbo start")
   goto(ternary.int(curPos!={playerPos}||status!={status},loop,move2))
 bomb:
-	executesync("turbo stop")
+    executesync("turbo stop")
     adventure.placeBomb()
     executesync("turbo start")
   goto(loop)
 wait:
-	executesync("turbo stop")
+    executesync("turbo stop")
     adventure.wait()
     executesync("turbo start")
   goto(loop)
 end:
 wait(0.)
-
-

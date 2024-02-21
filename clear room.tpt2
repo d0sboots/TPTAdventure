@@ -17,28 +17,28 @@
 #difficulty(x,y) {abs({x})} + {abs({y})}
 #cur_difficulty {difficulty({room_x},{room_y})}
 #nextRoomLower ternary.string(\
-	{room_x} < 0 && {room_y} >=0,"R",ternary.string(\
+    {room_x} < 0 && {room_y} >=0,"R",ternary.string(\
     {room_x} >=0 && {room_y} >0,"D",ternary.string( \
     {room_x} >0 && {room_y} <=0,"L",\
     "U" \
-    )))    
+    )))
 #rotateLeft(x) ternary.string({x}=="U","L",ternary.string({x}=="L","D",ternary.string({x}=="D","R","U")))
 #posToString(p) concat(ternary.string(len(i2s({p}))==1,"00",\
-	ternary.string(len(i2s({p}))==2,"0","")),i2s({p}))
+    ternary.string(len(i2s({p}))==2,"0","")),i2s({p}))
 
 executesync("leon.adventure:kill enemies")
 executesync("leon.adventure:farm keys")
 leon.adventure.eod=ternary.int({cur_difficulty}<=50,leon.adventure.eod,1)
 
 leon.adventure.room_direction = ternary.string( \
-	{cur_difficulty}==0 && len(leon.adventure.room_direction)>0,{rotateLeft(leon.adventure.room_direction)}\
+    {cur_difficulty}==0 && len(leon.adventure.room_direction)>0,{rotateLeft(leon.adventure.room_direction)}\
     ,ternary.string((i2d(adventure.playerAttack()) >= round(i2d({cur_difficulty}+1)*0.38+1.)+round(i2d({cur_difficulty}+1)*0.08) \
     || i2d(adventure.playerArmor()) >= ceil(i2d({cur_difficulty}+1)*0.39))&& \
     leon.adventure.maxDifficulty >= ({cur_difficulty}+1)\
     ,{rotateLeft({nextRoomLower})},{nextRoomLower}))
 
 leon.adventure.targetPositions = concat({posToString(ternary.int(leon.adventure.room_direction=="U",351,\
-	ternary.int(leon.adventure.room_direction=="L",171,\
+    ternary.int(leon.adventure.room_direction=="L",171,\
     ternary.int(leon.adventure.room_direction=="R",189,9))))},":")
 
 executesync("leon.adventure:find loot")

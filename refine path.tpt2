@@ -14,24 +14,24 @@
 #curDirection sub(path,stepCount,1)
 #insert(st,i,val) concat(concat(sub({st},0,{i}),{val}),sub({st},{i},len({st})-{i}))
 #inverse(d) ternary.string({d}=="U","D",ternary.string({d}=="D","U",\
-	ternary.string({d}=="R","L","R")))
+    ternary.string({d}=="R","L","R")))
 #posToVec(x) vec(i2d({x}%19),i2d({x}/19))
 #getEntity(pos) adventure.entityType({posToVec({pos})})
 #getCurrentEntity {getEntity({nextField({curDirection})})}
 #escapeDirection ternary.string(\
-			{getEntity({goUp(curPos)})} == "" && \
-			{getEntity({goUp({goUp(curPos)})})} == "" && \
-    		(false == adventure.isWall({posToVec({goUp(curPos)})})) &&\
+            {getEntity({goUp(curPos)})} == "" && \
+            {getEntity({goUp({goUp(curPos)})})} == "" && \
+            (false == adventure.isWall({posToVec({goUp(curPos)})})) &&\
             {goUp(curPos)} != 351,\
         "BUUWDD",ternary.string(\
-        	{getEntity({goDown(curPos)})}=="" && \
-			{getEntity({goDown({goDown(curPos)})})} == "" && \
-    		(false == adventure.isWall({posToVec({goDown(curPos)})})) &&\
+            {getEntity({goDown(curPos)})}=="" && \
+            {getEntity({goDown({goDown(curPos)})})} == "" && \
+            (false == adventure.isWall({posToVec({goDown(curPos)})})) &&\
             {goDown(curPos)} != 9,\
         "BDDWUU",ternary.string(\
-        	{getEntity({goLeft(curPos)})} == "" && \
-			{getEntity({goLeft({goLeft(curPos)})})} == "" && \
-    		(false == adventure.isWall({posToVec({goLeft(curPos)})})) &&\
+            {getEntity({goLeft(curPos)})} == "" && \
+            {getEntity({goLeft({goLeft(curPos)})})} == "" && \
+            (false == adventure.isWall({posToVec({goLeft(curPos)})})) &&\
             {goLeft(curPos)} != 171,\
         "BLLWRR","BRRWLL")))
 
@@ -41,20 +41,19 @@ stepCount = 0
 path=leon.adventure.path
 loop:
 goto(ternary.int(stepCount>=len(path),end,ternary.int(\
-		{getCurrentEntity} == "Door",door,\
-	ternary.int({getCurrentEntity} == "Rock",rock,nextTile))))
-rock:        	
-	path = {insert(path,stepCount,ternary.string(leon.adventure.eod == 1,"BWWW",{escapeDirection}))}
-	stepCount+=ternary.int(leon.adventure.eod==1,4,6)
-	goto(nextTile)
+        {getCurrentEntity} == "Door",door,\
+    ternary.int({getCurrentEntity} == "Rock",rock,nextTile))))
+rock:
+    path = {insert(path,stepCount,ternary.string(leon.adventure.eod == 1,"BWWW",{escapeDirection}))}
+    stepCount+=ternary.int(leon.adventure.eod==1,4,6)
+    goto(nextTile)
 door:
-	path={insert(path,stepCount,{curDirection})}
+    path={insert(path,stepCount,{curDirection})}
     stepCount+=1
 nextTile:
-	curPos={nextField({curDirection})}
+    curPos={nextField({curDirection})}
     stepCount+=1
     goto(loop)
 end:
-	leon.adventure.path = path
+    leon.adventure.path = path
     wait(0.)
-    

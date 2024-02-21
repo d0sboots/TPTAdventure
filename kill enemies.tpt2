@@ -1,18 +1,19 @@
-#enemies_alive ({lua(local positions = {} \
-					local counter = 1 \
-					for x=1,17,1 do \
-						for y=1,17,1 do \
-                        	if not(x%2==0 and y%2==0) then \
-                            	positions[counter]="adventure.isEnemy(vec("..x..".,"..y..".))" \
-								counter = counter + 1 \
-                            end \
-                        end \
-                    end \
-					positions[counter]="adventure.isEnemy(vec(0.,9.))" \
-					positions[counter+1]="adventure.isEnemy(vec(9.,0.))" \
-					positions[counter+2]="adventure.isEnemy(vec(9.,18.))" \
-					positions[counter+3]="adventure.isEnemy(vec(18.,9.))" \
-                    return table.concat(positions,"||") )})
+#enemies_alive ({lua(\
+    local positions = {} \
+    local counter = 1 \
+    for x=1,17,1 do \
+        for y=1,17,1 do \
+            if not(x%2==0 and y%2==0) then \
+                positions[counter]="adventure.isEnemy(vec("..x..".,"..y..".))" \
+                counter = counter + 1 \
+            end \
+        end \
+    end \
+    positions[counter]="adventure.isEnemy(vec(0.,9.))" \
+    positions[counter+1]="adventure.isEnemy(vec(9.,0.))" \
+    positions[counter+2]="adventure.isEnemy(vec(9.,18.))" \
+    positions[counter+3]="adventure.isEnemy(vec(18.,9.))" \
+    return table.concat(positions,"||") )})
 #xMove(d) ternary.double({d}=="L",-1.,ternary.double({d}=="R",1.,0.))
 #yMove(d) ternary.double({d}=="U",1.,ternary.double({d}=="D",-1.,0.))
 #move(d) vec({xMove({d})},{yMove({d})})
@@ -23,7 +24,7 @@
 #posToVec(x) vec(i2d({x}%19),i2d({x}/19))
 #playerPos d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos())))
 #enemyDirection ternary.string(adventure.isEnemy({posToVec({goUp({playerPos})})}),"U",\
-	ternary.string(adventure.isEnemy({posToVec({goRight({playerPos})})}),"R",\
+    ternary.string(adventure.isEnemy({posToVec({goRight({playerPos})})}),"R",\
     ternary.string(adventure.isEnemy({posToVec({goDown({playerPos})})}),"D",\
     ternary.string(adventure.isEnemy({posToVec({goLeft({playerPos})})}),"L","W"))))
 
@@ -36,16 +37,16 @@ executesync("turbo start")
 start:
 goto(ternary.int({enemies_alive},wait,ternary.int(impulse()=="key.k",stop,end)))
 wait:
-	executesync("turbo stop")
-	adventure.wait()
-	executesync("turbo start")
+    executesync("turbo stop")
+    adventure.wait()
+    executesync("turbo start")
     gotoif(wait,{enemyDirection}=="W")
 attack:
-	executesync("turbo stop")
-	adventure.move({move({enemyDirection})})
-	executesync("turbo start")
-	goto(ternary.int({enemyDirection}!="W",attack,start))
+    executesync("turbo stop")
+    adventure.move({move({enemyDirection})})
+    executesync("turbo start")
+    goto(ternary.int({enemyDirection}!="W",attack,start))
 stop:
-	executesync("turbo stop")
+    executesync("turbo stop")
 end:
 wait(0.)
