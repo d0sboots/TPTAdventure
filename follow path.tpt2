@@ -22,19 +22,19 @@ move:
     curPos = {playerPos}
     status = {status}
     move2:
-      executesync("turbo stop")
+      executesync("TE2.2:stop")
       adventure.move({nextMove})
-      executesync("turbo start")
+      executesync("TE2.2:start")
   goto(ternary.int(curPos!={playerPos}||status!={status},loop,move2))
 bomb:
-    executesync("turbo stop")
+    executesync("TE2.2:stop")
     adventure.placeBomb()
-    executesync("turbo start")
+    executesync("TE2.2:start")
   goto(loop)
 wait:
-    executesync("turbo stop")
+    executesync("TE2.2:stop")
     adventure.wait()
-    executesync("turbo start")
+    executesync("TE2.2:start")
   goto(loop)
 end:
 wait(0.)

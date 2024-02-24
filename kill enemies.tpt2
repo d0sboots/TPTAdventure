@@ -29,20 +29,20 @@ key.k()
 isopen("arcade")
 
 gotoif(start,impulse()!="key.k")
-executesync("turbo start")
+executesync("TE2.2:start")
 start:
 goto(ternary.int({enemies_alive},wait,ternary.int(impulse()=="key.k",stop,end)))
 wait:
-    executesync("turbo stop")
+    executesync("TE2.2:stop")
     adventure.wait()
-    executesync("turbo start")
+    executesync("TE2.2:start")
     gotoif(wait,{enemyDirection}=="W")
 attack:
-    executesync("turbo stop")
+    executesync("TE2.2:stop")
     adventure.move({move({enemyDirection})})
-    executesync("turbo start")
+    executesync("TE2.2:start")
     goto(ternary.int({enemyDirection}!="W",attack,start))
 stop:
-    executesync("turbo stop")
+    executesync("TE2.2:stop")
 end:
 wait(0.)

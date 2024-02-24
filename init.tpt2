@@ -21,7 +21,7 @@ leon.adventure.maxDifficulty = ternary.int(impulse()=="key.i",maxDifficultyInit,
 
 goto(ternary.int(impulse()=="key.i",end,ternary.int(leon.adventure.running != 0,stop,start)))
 start:
-executesync("turbo start")
+executesync("TE2.2:start")
 gis("<size=0>leon.adventure",0)
 leon.adventure.running = 1
 leon.adventure.target_pos = 0.
@@ -33,7 +33,7 @@ loop:
 executesync("{package}:clear room")
 leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if({cur_difficulty}>=i2d(leon.adventure.maxDifficulty) && adventure.isCompleted(adventure.roomCoords()),2,0)
 gotoif(loop,leon.adventure.running==1)
-executesync("turbo stop")
+executesync("TE2.2:stop")
 stop:
 leon.adventure.running = 0
 end:
