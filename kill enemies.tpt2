@@ -1,48 +1,39 @@
 :import adventure_lib
 :name {package}:kill enemies
 
-#enemies_alive ({lua(\
-    local positions = {} \
-    local counter = 1 \
-    for x=1,17,1 do \
-        for y=1,17,1 do \
-            if not(x%2==0 and y%2==0) then \
-                positions[counter]="adventure.isEnemy(vec("..x..".,"..y..".))" \
-                counter = counter + 1 \
-            end \
-        end \
-    end \
-    positions[counter]="adventure.isEnemy(vec(0.,9.))" \
-    positions[counter+1]="adventure.isEnemy(vec(9.,0.))" \
-    positions[counter+2]="adventure.isEnemy(vec(9.,18.))" \
-    positions[counter+3]="adventure.isEnemy(vec(18.,9.))" \
-    return table.concat(positions,"||") )})
-
 #enemyInDir(x, y) adventure.isEnemy(adventure.playerPos() + vec({x},{y}))
-#enemyDirection if({enemyInDir(0., 1.)},"U",\
-    if({enemyInDir(1., 0.)},"R",\
-    if({enemyInDir(0., -1.)},"D",\
-    if({enemyInDir(-1., 0.)},"L","W"))))
+#enemyDirection if({enemyInDir(0., 1.)}, vec(0., 1.),\
+    if({enemyInDir(1., 0.)}, vec(1., 0.),\
+    if({enemyInDir(0., -1.)}, vec(0., -1.),\
+    if({enemyInDir(-1., 0.)}, vec(-1., 0.), vec(0., 0.)))))
+#anyEnemies {enemyInDir(0., 1.)} || {enemyInDir(0., -1.)} || {enemyInDir(1., 0.)} || {enemyInDir(-1., 0.)}
 
 key.k()
 
 isopen("arcade")
 
-gotoif(start,impulse()!="key.k")
-executesync("TE2.2:start")
-start:
-goto(ternary.int({enemies_alive},wait,ternary.int(impulse()=="key.k",stop,end)))
+goto(if(contains(impulse(), "key"), turbostart, loop))
 wait:
-    executesync("TE2.2:stop")
-    adventure.wait()
-    executesync("TE2.2:start")
-    gotoif(wait,{enemyDirection}=="W")
+adventure.wait()
+
 attack:
-    executesync("TE2.2:stop")
-    adventure.move({move({enemyDirection})})
-    executesync("TE2.2:start")
-    goto(ternary.int({enemyDirection}!="W",attack,start))
+executesync("TE2.2:stop")
+adventure.move({enemyDirection})
+
+turbostart:
+executesync("TE2.2:start")
+
+loop:
+goto(if(\
+  {anyEnemies},\
+  attack,\
+  if(\
+    max(max(adventure.countEntities("Enemy"), adventure.countEntities("Elite")), adventure.countEntities("Mimic")) > 0,\
+    wait,\
+    if(impulse()=="key.k", stop, end)\
+  )\
+))
 stop:
-    executesync("TE2.2:stop")
+executesync("TE2.2:stop")
 end:
 wait(0.)
