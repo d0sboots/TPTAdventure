@@ -1,64 +1,54 @@
+:import adventure_lib
+:name {package}:find path
+
 :global string leon.adventure.path
-:global int leon.adventure.target_pos
+:global double leon.adventure.target_pos
 :global int turbo.cycles.max
 :global int turbo.cycles
 
-
-:local int curPos
+:local double curPos
 :local string queue
 :local string field
 :local string path
 
-
-#goRight a.i(curPos,"+",1)
-#goLeft a.i(curPos,"-",1)
-#goUp a.i(curPos,"+",19)
-#goDown a.i(curPos,"-",19)
-#distance(x,y) ({x}%19)-({y}%19)+({x}/19)-({y}/19)
-#posToVec(x) vec(i2d({x}%19),i2d({x}/19))
-#posToString(p) concat(ternary.string(len(i2s({p}))==1,"00",\
-    ternary.string(len(i2s({p}))==2,"0","")),i2s({p}))
-#firstElementPos s2i(sub(queue,0,3),-1)
-#firstElementDir sub(queue,3,1)
-#pop queue=sub(queue,5,a.i(len(queue),"-",5))
-#replace(st,i,val) {st}=concat(concat(sub({st},0,{i}),{val}),sub({st},{i}+1,a.i(len({st}),"-",{i}+1)))
+#distance(x,y) ({x}%19.)-({y}%19.)+floor({x}/19.)-floor({y}/19.)
 
 start:
 turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
-queue = concat({posToString(d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos()))))},"S:")
+queue = {posToString(x(adventure.playerPos()) + 19. * y(adventure.playerPos()))} . "S:"
 field = "{lua(return string.rep("0",362))}"
 loop1:
     curPos = {firstElementPos}
-    {replace(field, curPos, {firstElementDir})}
+    field = {replace(field, d2i(curPos), {firstElementDir}, 1)}
     {pop}
-    queue= concat(queue,concat(concat(concat(\
-        ternary.string(false == adventure.isWall({posToVec({goUp})}) && \
+    queue= queue .\
+        if(false == adventure.isWall({posToVec({goUp})}) && \
             false == contains(queue,{posToString({goUp})}) && \
-            {goUp}<361 &&\
-            sub(field,{goUp},1)=="0" ,\
-            concat({posToString({goUp})},"U:"),""),\
-        ternary.string(false == adventure.isWall({posToVec({goDown})}) && \
+            {goUp}<361. &&\
+            sub(field,d2i({goUp}),1)=="0" ,\
+            concat({posToString({goUp})},"U:"),"") .\
+        if(false == adventure.isWall({posToVec({goDown})}) && \
             false == contains(queue,{posToString({goDown})}) && \
-            {goDown}>=0 &&\
-            sub(field,{goDown},1)=="0" , \
-            concat({posToString({goDown})},"D:"),"")) ,\
-        ternary.string(false == adventure.isWall({posToVec({goRight})}) && \
+            {goDown}>=0. &&\
+            sub(field,d2i({goDown}),1)=="0" , \
+            {posToString({goDown})} . "D:", "") .\
+        if(false == adventure.isWall({posToVec({goRight})}) && \
             false == contains(queue,{posToString({goRight})}) && \
-            sub(field,{goRight},1)=="0"&&\
-            {distance({goRight},curPos)}<=1,\
-            concat({posToString({goRight})},"R:"),"")),\
-        ternary.string(false == adventure.isWall({posToVec({goLeft})}) && \
+            sub(field,d2i({goRight}),1)=="0"&&\
+            {distance({goRight},curPos)}<=1.,\
+            {posToString({goRight})} . "R:", "") .\
+        if(false == adventure.isWall({posToVec({goLeft})}) && \
             false == contains(queue,{posToString({goLeft})}) && \
-            sub(field,{goLeft},1) == "0"&&\
-            {distance({goLeft},curPos)}<=1,\
-            concat({posToString({goLeft})},"L:"),"")))
+            sub(field,d2i({goLeft}),1) == "0"&&\
+            {distance({goLeft},curPos)}<=1.,\
+            {posToString({goLeft})} . "L:", "")
   gotoif(loop1,len(queue)>0&&curPos!=leon.adventure.target_pos)
 loop2:
-    path=concat(sub(field,curPos,1),path)
-    curPos=ternary.int(sub(path,0,1)=="U",{goDown},ternary.int(sub(path,0,1)=="D",{goUp},\
-        ternary.int(sub(path,0,1)=="R",{goLeft},ternary.int(sub(path,0,1)=="L",{goRight},curPos))))
-  gotoif(loop2,sub(field,curPos,1)!="S")
-leon.adventure.path = ternary.string(path=="S","",path)
-executesync("leon.adventure:refine path")
+    path=sub(field,d2i(curPos),1) . path
+    curPos=if(sub(path,0,1)=="U",{goDown},if(sub(path,0,1)=="D",{goUp},\
+        if(sub(path,0,1)=="R",{goLeft},if(sub(path,0,1)=="L",{goRight},curPos))))
+  gotoif(loop2,sub(field,d2i(curPos),1)!="S")
+leon.adventure.path = if(path=="S","",path)
+executesync("{package}:refine path")
 end:
 wait(0.0)

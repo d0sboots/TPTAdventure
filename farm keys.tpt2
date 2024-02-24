@@ -1,12 +1,10 @@
+:import adventure_lib
+:name {package}:farm keys
+
 :global string leon.adventure.path
 :global int leon.adventure.running
 
 :local int curPos
-
-
-#xMove(d) ternary.double({d}=="L",-1.,ternary.double({d}=="R",1.,0.))
-#yMove(d) ternary.double({d}=="U",1.,ternary.double({d}=="D",-1.,0.))
-#move(d) vec({xMove({d})},{yMove({d})})
 
 start:
 curPos=d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos())))

@@ -1,4 +1,7 @@
-:global int leon.adventure.target_pos
+:import adventure_lib
+:name {package}:find loot
+
+:global double leon.adventure.target_pos
 :global int turbo.cycles.max
 :global int turbo.cycles
 :global int leon.adventure.running
@@ -10,17 +13,17 @@ key.j()
 
 isopen("arcade")
 
-leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + ternary.int(impulse()=="key.j",-1,ternary.int(impulse()=="key.u",1,0))
+leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if(impulse()=="key.j",-1,if(impulse()=="key.u",1,0))
 gotoif(end,contains(impulse(),"key."))
 
 start:
 turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
-executesync("leon.adventure:analyze loot")
+executesync("{package}:analyze loot")
 loop:
-    leon.adventure.target_pos = s2i(sub(leon.adventure.targetPositions,0,3),0)
-    leon.adventure.targetPositions = sub(leon.adventure.targetPositions,4,a.i(len(leon.adventure.targetPositions),"-",4))
-    executesync("leon.adventure:find path")
-    executesync("leon.adventure:follow path")
+    leon.adventure.target_pos = s2d(sub(leon.adventure.targetPositions,0,3),0.)
+    leon.adventure.targetPositions = sub(leon.adventure.targetPositions,4,99999)
+    executesync("{package}:find path")
+    executesync("{package}:follow path")
   gotoif(loop,len(leon.adventure.targetPositions)>0&&leon.adventure.running>0)
 end:
 wait(0.)

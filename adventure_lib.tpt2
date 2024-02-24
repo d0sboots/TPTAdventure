@@ -1,0 +1,23 @@
+#package Adventure v3.0
+
+#abs(x) ((({x})^2.)^0.5)
+#goRight (curPos + 1.)
+#goLeft (curPos - 1.)
+#goUp (curPos + 19.)
+#goDown (curPos - 19.)
+
+#xMove(d) if({d}=="L",-1.,ternary.double({d}=="R",1.,0.))
+#yMove(d) if({d}=="U",1.,ternary.double({d}=="D",-1.,0.))
+#move(d) vec({xMove({d})},{yMove({d})})
+
+#posToVec(x) vec(({x})%19.,floor(({x})/19.))
+#posToString(p) sub(d2s(({p}) + 1000.), 1, 3)
+#firstElementPos s2d(sub(queue,0,3),-1.)
+#firstElementDir sub(queue,3,1)
+#nextField(d) (curPos + s2d(sub("019 -19 -01 001", index("U   D   L   R", {d}, 0), 3), 0.))
+#nextFieldInverse(d) (curPos + s2d(sub("-19 019 001 -01", index("U   D   L   R", {d}, 0), 3), 0.))
+#replace(st,i,val,valLen) sub({st},0,{i}) . \
+    {val} . \
+    sub({st}, ({i}) + ({valLen}), 99999)
+#pop queue=sub(queue,5,99999)
+#cur_difficulty {abs(x(adventure.roomCoords()) + y(adventure.roomCoords()) - 254.)}

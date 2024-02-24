@@ -1,51 +1,47 @@
+:import adventure_lib
+:name {package}:refine path
+
 :global string leon.adventure.path
-:global int leon.adventure.eod
 
 :local string path
-:local int curPos
+:local double curPos
 :local int stepCount
 
-
-#goRight(pos) a.i({pos},"+",1)
-#goLeft(pos) a.i({pos},"-",1)
-#goUp(pos) a.i({pos},"+",19)
-#goDown(pos) a.i({pos},"-",19)
-#nextField(d) ternary.int({d}=="U",{goUp(curPos)},ternary.int({d}=="D",{goDown(curPos)},ternary.int({d}=="R",{goRight(curPos)},{goLeft(curPos)})))
+#nextVec(d) {posToVec(curPos)} + vec(s2d(sub("1102", index("UDLR", {d}, 0), 1), 0.), s2d(sub("2011", index("UDLR", {d}, 0), 1), 0.)) - vec(1., 1.)
 #curDirection sub(path,stepCount,1)
-#insert(st,i,val) concat(concat(sub({st},0,{i}),{val}),sub({st},{i},len({st})-{i}))
+#insert(st,i,val) sub({st},0,{i}) . ({val}) . sub({st},{i},99999)
 #inverse(d) ternary.string({d}=="U","D",ternary.string({d}=="D","U",\
     ternary.string({d}=="R","L","R")))
-#posToVec(x) vec(i2d({x}%19),i2d({x}/19))
 #getEntity(pos) adventure.entityType({posToVec({pos})})
-#getCurrentEntity {getEntity({nextField({curDirection})})}
-#escapeDirection ternary.string(\
-            {getEntity({goUp(curPos)})} == "" && \
-            {getEntity({goUp({goUp(curPos)})})} == "" && \
-            (false == adventure.isWall({posToVec({goUp(curPos)})})) &&\
-            {goUp(curPos)} != 351,\
-        "BUUWDD",ternary.string(\
-            {getEntity({goDown(curPos)})}=="" && \
-            {getEntity({goDown({goDown(curPos)})})} == "" && \
-            (false == adventure.isWall({posToVec({goDown(curPos)})})) &&\
-            {goDown(curPos)} != 9,\
-        "BDDWUU",ternary.string(\
-            {getEntity({goLeft(curPos)})} == "" && \
-            {getEntity({goLeft({goLeft(curPos)})})} == "" && \
-            (false == adventure.isWall({posToVec({goLeft(curPos)})})) &&\
-            {goLeft(curPos)} != 171,\
+#getCurrentEntity adventure.entityType({nextVec({curDirection})})
+#escapeDirection if(\
+            {getEntity({goUp})} == "" && \
+            {getEntity(curPos + 19. * 2.)} == "" && \
+            (false == adventure.isWall({posToVec({goUp})})) &&\
+            {goUp} != 351.,\
+        "BUUWDD",if(\
+            {getEntity({goDown})}=="" && \
+            {getEntity(curPos - 19. * 2.)} == "" && \
+            (false == adventure.isWall({posToVec({goDown})})) &&\
+            {goDown} != 9.,\
+        "BDDWUU",if(\
+            {getEntity({goLeft})} == "" && \
+            {getEntity(curPos - 2.)} == "" && \
+            (false == adventure.isWall({posToVec({goLeft})})) &&\
+            {goLeft} != 171.,\
         "BLLWRR","BRRWLL")))
 
 start:
-curPos=d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos())))
+curPos=x(adventure.playerPos())+19.*y(adventure.playerPos())
 stepCount = 0
 path=leon.adventure.path
 loop:
-goto(ternary.int(stepCount>=len(path),end,ternary.int(\
+goto(if(stepCount>=len(path),end,if(\
         {getCurrentEntity} == "Door",door,\
-    ternary.int({getCurrentEntity} == "Rock",rock,nextTile))))
+    if({getCurrentEntity} == "Rock",if(adventure.hasItem("hammer"), door, rock),nextTile))))
 rock:
-    path = {insert(path,stepCount,ternary.string(leon.adventure.eod == 1,"BWWW",{escapeDirection}))}
-    stepCount+=ternary.int(leon.adventure.eod==1,4,6)
+    path = {insert(path,stepCount,if(adventure.hasItem("eodArmor"),"BWWW",{escapeDirection}))}
+    stepCount+=if(adventure.hasItem("eodArmor"),4,6)
     goto(nextTile)
 door:
     path={insert(path,stepCount,{curDirection})}

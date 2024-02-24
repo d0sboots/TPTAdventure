@@ -1,3 +1,6 @@
+:import adventure_lib
+:name {package}:kill enemies
+
 #enemies_alive ({lua(\
     local positions = {} \
     local counter = 1 \
@@ -14,19 +17,12 @@
     positions[counter+2]="adventure.isEnemy(vec(9.,18.))" \
     positions[counter+3]="adventure.isEnemy(vec(18.,9.))" \
     return table.concat(positions,"||") )})
-#xMove(d) ternary.double({d}=="L",-1.,ternary.double({d}=="R",1.,0.))
-#yMove(d) ternary.double({d}=="U",1.,ternary.double({d}=="D",-1.,0.))
-#move(d) vec({xMove({d})},{yMove({d})})
-#goRight(x) a.i({x},"+",1)
-#goLeft(x) a.i({x},"-",1)
-#goUp(x) max(a.i({x},"+",19),0)
-#goDown(x) min(a.i({x},"-",19),360)
-#posToVec(x) vec(i2d({x}%19),i2d({x}/19))
-#playerPos d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos())))
-#enemyDirection ternary.string(adventure.isEnemy({posToVec({goUp({playerPos})})}),"U",\
-    ternary.string(adventure.isEnemy({posToVec({goRight({playerPos})})}),"R",\
-    ternary.string(adventure.isEnemy({posToVec({goDown({playerPos})})}),"D",\
-    ternary.string(adventure.isEnemy({posToVec({goLeft({playerPos})})}),"L","W"))))
+
+#enemyInDir(x, y) adventure.isEnemy(adventure.playerPos() + vec({x},{y}))
+#enemyDirection if({enemyInDir(0., 1.)},"U",\
+    if({enemyInDir(1., 0.)},"R",\
+    if({enemyInDir(0., -1.)},"D",\
+    if({enemyInDir(-1., 0.)},"L","W"))))
 
 key.k()
 
