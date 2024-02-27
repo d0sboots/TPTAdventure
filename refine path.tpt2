@@ -3,53 +3,59 @@
 
 :global string leon.adventure.path
 
-:local string path
-:local double curPos
+:local vector curPos
 :local int stepCount
 
-#nextVec(d) {posToVec(curPos)} + vec(s2d(sub("1102", index("UDLR", {d}, 0), 1), 0.), s2d(sub("2011", index("UDLR", {d}, 0), 1), 0.)) - vec(1., 1.)
-#curDirection sub(path,stepCount,1)
+#curDirection sub(leon.adventure.path, stepCount, 1)
 #insert(st,i,val) sub({st},0,{i}) . ({val}) . sub({st},{i},99999)
-#inverse(d) ternary.string({d}=="U","D",ternary.string({d}=="D","U",\
-    ternary.string({d}=="R","L","R")))
-#getEntity(pos) adventure.entityType({posToVec({pos})})
-#getCurrentEntity adventure.entityType({nextVec({curDirection})})
 #escapeDirection if(\
-            {getEntity({goUp})} == "" && \
-            {getEntity(curPos + 19. * 2.)} == "" && \
-            (false == adventure.isWall({posToVec({goUp})})) &&\
-            {goUp} != 351.,\
-        "BUUWDD",if(\
-            {getEntity({goDown})}=="" && \
-            {getEntity(curPos - 19. * 2.)} == "" && \
-            (false == adventure.isWall({posToVec({goDown})})) &&\
-            {goDown} != 9.,\
-        "BDDWUU",if(\
-            {getEntity({goLeft})} == "" && \
-            {getEntity(curPos - 2.)} == "" && \
-            (false == adventure.isWall({posToVec({goLeft})})) &&\
-            {goLeft} != 171.,\
-        "BLLWRR","BRRWLL")))
+  adventure.entityType(curPos + vec(0., 1.)) == ""\
+    && adventure.entityType(curPos + vec(0., 2.)) == ""\
+    && false == adventure.isWall(curPos + vec(0., 1.)),\
+  "BUUWDD",\
+  if(\
+    adventure.entityType(curPos + vec(0., -1.)) == ""\
+      && adventure.entityType(curPos + vec(0., -2.)) == ""\
+      && false == adventure.isWall(curPos + vec(0., -1.)),\
+    "BDDWUU",\
+    if(\
+      adventure.entityType(curPos + vec(-1., 0.)) == ""\
+        && adventure.entityType(curPos + vec(-2., 0.)) == ""\
+        && false == adventure.isWall(curPos + vec(-1., 0.)),\
+      "BLLWRR",\
+      "BRRWLL"\
+    )\
+  )\
+)
 
-start:
-curPos=x(adventure.playerPos())+19.*y(adventure.playerPos())
-stepCount = 0
-path=leon.adventure.path
-loop:
-goto(if(stepCount>=len(path),end,if(\
-        {getCurrentEntity} == "Door",door,\
-    if({getCurrentEntity} == "Rock",if(adventure.hasItem("hammer"), door, rock),nextTile))))
+curPos = adventure.playerPos()
+goto(start)
+
 rock:
-    path = {insert(path,stepCount,if(adventure.hasItem("eodArmor"),"BWWW",{escapeDirection}))}
-    stepCount+=if(adventure.hasItem("eodArmor"),4,6)
-    goto(nextTile)
-door:
-    path={insert(path,stepCount,{curDirection})}
-    stepCount+=1
+leon.adventure.path = {insert(\
+  leon.adventure.path,\
+  stepCount,\
+  if(adventure.hasItem("eodArmor"), "BWWW", {escapeDirection})\
+)}
+stepCount += if(adventure.hasItem("eodArmor"), 4, 6)
+
 nextTile:
-    curPos={nextField({curDirection})}
-    stepCount+=1
-    goto(loop)
+stepCount += 1
+start:
+curPos += {nextDir({curDirection})}
+
+; At this point, curPos has applied the movement of leon.adventure.path[stepCount],
+; but stepCount is not yet incremented. This is so anything that is inserted will
+; be inserted *before* the just-applied move, i.e. if we find a rock we will
+; insert our bomb sequence *before* the move onto its square.
+goto(if(\
+  stepCount >= len(leon.adventure.path),\
+  end,\
+  if(\
+    adventure.entityType(curPos) != "Rock" || adventure.hasItem("hammer"),\
+    nextTile,\
+    rock\
+  )\
+))
 end:
-    leon.adventure.path = path
     wait(0.)

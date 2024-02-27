@@ -2,19 +2,25 @@
 :name {package}:farm keys
 
 :global string leon.adventure.path
-:global int leon.adventure.running
+:global bool leon.adventure.running
 
-:local int curPos
+:local string dir
 
-start:
-curPos=d2i(x(adventure.playerPos()))+a.i(19,"*",d2i(y(adventure.playerPos())))
-gotoif(end, adventure.keys() > 10 || (((curPos != 9) && (curPos != 189)) && ((curPos != 171) && (curPos!=351)))||leon.adventure.running!=1)
-leon.adventure.path = ternary.string(curPos==9,"D",ternary.string(curPos==171,"L",ternary.string(curPos==189,"R","U")))
-executesync("leon.adventure:follow path")
-executesync("leon.adventure:kill enemies")
-leon.adventure.path = ternary.string(curPos==9,"U",ternary.string(curPos==171,"R",ternary.string(curPos==189,"L","D")))
-executesync("leon.adventure:follow path")
-executesync("leon.adventure:kill enemies")
 goto(start)
+
+next:
+leon.adventure.path = dir
+executesync("leon.adventure:follow path")
+executesync("leon.adventure:kill enemies")
+leon.adventure.path = sub("DURL", index("UDLR", dir, 0), 1)
+executesync("leon.adventure:follow path")
+executesync("leon.adventure:kill enemies")
+start:
+dir = sub("XU   D  L  R", index(" 918 90 09 189", x(adventure.playerPos()) . y(adventure.playerPos()), 0), 1)
+goto(if(\
+  adventure.keys() <= 10 && contains("UDLR", dir) && leon.adventure.running,\
+  next,\
+  end\
+))
 end:
 wait(0.)

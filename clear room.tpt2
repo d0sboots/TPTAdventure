@@ -7,28 +7,44 @@
 
 :global string leon.adventure.room_direction
 
-#nextRoomLower ternary.string(\
-    x(adventure.roomCoords()) < 127.0 && y(adventure.roomCoords()) >=127.0,"R",if(\
-    x(adventure.roomCoords()) >= 127.0 && y(adventure.roomCoords()) >127.0,"D",if( \
-    x(adventure.roomCoords()) > 127.0 && y(adventure.roomCoords()) <=127.0,"L",\
-    "U" \
-    )))
+#nextRoomLower if(\
+  x(adventure.roomCoords()) < 127.0 && y(adventure.roomCoords()) >= 127.0,\
+  "R",\
+  if(\
+    x(adventure.roomCoords()) >= 127.0 && y(adventure.roomCoords()) > 127.0,\
+    "D",\
+    if(\
+      x(adventure.roomCoords()) > 127.0 && y(adventure.roomCoords()) <= 127.0,\
+      "L",\
+      "U" \
+    )\
+  )\
+)
 #rotateLeft(x) sub("LDRU", index("ULDR", {x}, 0), 1)
 
 executesync("{package}:kill enemies")
 executesync("{package}:farm keys")
 
-leon.adventure.room_direction = if( \
-    {cur_difficulty}==0. && len(leon.adventure.room_direction)>0,{rotateLeft(leon.adventure.room_direction)}\
-    ,if((i2d(adventure.playerAttack()) >= round(({cur_difficulty}+1.)*0.38+1.)+round(({cur_difficulty}+1.)*0.08) \
-    || i2d(adventure.playerArmor()) >= ceil(({cur_difficulty}+1.)*0.39))&& \
-    i2d(leon.adventure.maxDifficulty) >= ({cur_difficulty}+1.)\
-    ,{rotateLeft({nextRoomLower})},{nextRoomLower}))
+; We check based on current difficulty plus 1, because it's more efficient
+; that way.
+leon.adventure.room_direction = if(\
+  {cur_difficultyP1} == 1. && len(leon.adventure.room_direction) > 0,\
+  {rotateLeft(leon.adventure.room_direction)},\
+  if(\
+    (\
+      i2d(adventure.playerAttack()) >=\
+        round({cur_difficultyP1} * 0.38 + 1.) + round({cur_difficultyP1} * 0.08)\
+        || i2d(adventure.playerArmor()) >= ceil({cur_difficultyP1} * 0.39)\
+    ) && i2d(leon.adventure.maxDifficulty) >= {cur_difficultyP1},\
+    {rotateLeft({nextRoomLower})},\
+    {nextRoomLower}\
+  )\
+)
 
 leon.adventure.targetPositions = sub(\
-    "351 171 189 009",\
-    index("U   L   R   D", leon.adventure.room_direction, 0),\
-    3\
+    "0918 0009 1809 0900",\
+    index("U    L    R    D", leon.adventure.room_direction, 0),\
+    4\
 ) . ":"
 
 executesync("{package}:find loot")

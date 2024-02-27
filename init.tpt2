@@ -2,9 +2,8 @@
 :name {package}:init
 
 :global double leon.adventure.delay
-:global double leon.adventure.target_pos
 :global string leon.adventure.path
-:global int leon.adventure.running
+:global bool leon.adventure.running
 :global int leon.adventure.maxDifficulty
 :global string leon.adventure.targetPositions
 :global string leon.adventure.room_direction
@@ -15,26 +14,37 @@ key.i()
 
 isopen("arcade")
 
-
 maxDifficultyInit = 81
-leon.adventure.maxDifficulty = ternary.int(impulse()=="key.i",maxDifficultyInit,ternary.int(leon.adventure.maxDifficulty == 0,maxDifficultyInit,leon.adventure.maxDifficulty))
+leon.adventure.maxDifficulty = if(\
+  contains(impulse(), "key.i") || leon.adventure.maxDifficulty == 0,\
+  maxDifficultyInit,\
+  leon.adventure.maxDifficulty\
+)
 
-goto(ternary.int(impulse()=="key.i",end,ternary.int(leon.adventure.running != 0,stop,start)))
+goto(if(\
+  contains(impulse(), "key.i"),\
+  end,\
+  if(leon.adventure.running, stop, start)\
+))
 start:
 executesync("TE2.2:start")
 gis("<size=0>leon.adventure",0)
-leon.adventure.running = 1
-leon.adventure.target_pos = 0.
+leon.adventure.running = true
 leon.adventure.path = ""
 leon.adventure.targetPositions = ""
 leon.adventure.room_direction = ""
 gss("---Stop hiding---", "</size=0>")
 loop:
 executesync("{package}:clear room")
-leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if({cur_difficulty}>=i2d(leon.adventure.maxDifficulty) && adventure.isCompleted(adventure.roomCoords()),2,0)
-gotoif(loop,leon.adventure.running==1)
+leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if(\
+  {cur_difficultyP1} > i2d(leon.adventure.maxDifficulty)\
+    && adventure.isCompleted(adventure.roomCoords()),\
+  2,\
+  0\
+)
+gotoif(loop, leon.adventure.running)
 executesync("TE2.2:stop")
 stop:
-leon.adventure.running = 0
+leon.adventure.running = false
 end:
 wait(0.)

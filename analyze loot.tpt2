@@ -3,77 +3,106 @@
 
 :global string leon.adventure.targetPositions
 
-:local string field
-:local string queue
-:local double curPos
-:local double targetPos
-:local string insertPosition
-:local string lootPositions
+:global string queue
+:global string idx
+:global vector curPos
+:global string targetPos
+:global string lootPositions
 
-#toQueueElement(pos,dir) {posToString({pos})} . {dir} . ":"
-#enqueue(pos,dir) queue=queue . {toQueueElement({pos},{dir})}
+#setField(index, value) lss("_f" . {index}, {value})
+#getField(index) lsg("_f" . {index})
+#setTPos(index, value) lss("_t" . {index}, {value})
+#getTPos(index) lsg("_t" . {index})
 
-{enqueue(x(adventure.playerPos())+ 19. * y(adventure.playerPos()),"S")}
-field = "{lua(return string.rep("0000",362))}"
+curPos = vec(0., 0.)
+idx = ""
+queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
+
+; On the first entry of this loop, the junk entry "_f" will be set to "S".
+; This has no effect.
+; In general, lootPositions, queue and setField are protected so that if the field
+; has already been set, we won't take action again.
 loop1:
-    curPos = {firstElementPos}
-    field = {replace(field, d2i(curPos)*4, {firstElementDir}, 1)}
-    {pop}
-    queue= queue . if(false == adventure.isWall({posToVec({goUp})}) && \
-            false == contains(queue,{posToString({goUp})}) && \
-            {goUp}<361. &&\
-            sub(field,d2i({goUp})*4,1)=="0" ,\
-            {posToString({goUp})} . "U:","") . \
-        if(false == adventure.isWall({posToVec({goDown})}) && \
-            false == contains(queue,{posToString({goDown})}) && \
-            {goDown}>=0. &&\
-            sub(field,d2i({goDown})*4,1)=="0" , \
-            {posToString({goDown})} . "D:","") .\
-        if(false == adventure.isWall({posToVec({goRight})}) && \
-            false == contains(queue,{posToString({goRight})}) && \
-            sub(field,d2i({goRight})*4,1)=="0"&&\
-            floor({goRight}/19.)==floor(curPos/19.),\
-            {posToString({goRight})} . "R:","") .\
-        if(false == adventure.isWall({posToVec({goLeft})}) && \
-            false == contains(queue,{posToString({goLeft})}) && \
-            sub(field,d2i({goLeft})*4,1) == "0"&&\
-            floor({goLeft}/19.)==floor(curPos/19.),\
-            {posToString({goLeft})} . "L:","")
-    lootPositions = if(\
-        adventure.entityType({posToVec(curPos)})=="Chest",\
-        {posToString(curPos)} . ":",\
-        "") . lootPositions
-  gotoif(loop1,len(queue)>0)
+curPos = {firstElementPos}
+idx = sub(queue, 0, 4)
+lootPositions = if(\
+  {getField(idx)} == ""\
+    && contains(adventure.entityType(curPos), "Chest"),\
+  {posToString(x(curPos), y(curPos))} . ":",\
+  "") . lootPositions
+{setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
+queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
+  "",\
+  if(\
+    adventure.isWall(curPos + vec(0., 1.)) || y(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(0., -1.)) || y(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(1., 0.)) || x(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(-1., 0.)) || x(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
+  )\
+)
+gotoif(loop1, queue != "")
+
+continue:
 lootPositions = leon.adventure.targetPositions . lootPositions
+
 loop2:
-    targetPos = s2d(sub(lootPositions,0,3),0.)
-    curPos = targetPos
-    lootPositions = sub(lootPositions,4,99999)
-    innerLoop2:
-    leon.adventure.targetPositions = if(\
-      sub(field, d2i({nextFieldInverse(sub(field,d2i(curPos)*4,1))}) * 4, 1) == "S"\
-        && false == contains(leon.adventure.targetPositions,{posToString(targetPos)}),\
-      {posToString(targetPos)} . ":" . leon.adventure.targetPositions,\
-      if(\
-        false == contains(leon.adventure.targetPositions,{posToString(targetPos)}) \
-          && sub(field,d2i(curPos)*4+1,3) != "000",\
-        sub(\
+targetPos = sub(lootPositions, 0, 4)
+curPos = {strToVec(targetPos)}
+lootPositions = sub(lootPositions, 5, 99999)
+
+innerLoop2:
+idx = {posToString(x(curPos), y(curPos))}
+leon.adventure.targetPositions = if(\
+  {getField({posToString(\
+    x(curPos) + {nextXInverse({getField(idx)})},\
+    y(curPos) + {nextYInverse({getField(idx)})}\
+  )})} == "S"\
+    && false == contains(leon.adventure.targetPositions, targetPos),\
+  targetPos . ":" . leon.adventure.targetPositions,\
+  if(\
+    false == contains(leon.adventure.targetPositions, targetPos) \
+      && {getTPos(idx)} != "",\
+      sub(\
+        leon.adventure.targetPositions,\
+        0,\
+        index(leon.adventure.targetPositions, {getTPos(idx)}, 0)\
+      )\
+        . targetPos . ":"\
+        . sub(\
           leon.adventure.targetPositions,\
-          0,\
-          index(leon.adventure.targetPositions, sub(field, d2i(curPos)*4+1,3),0)\
-        ) . {posToString(targetPos)} . ":" .\
-        sub(\
-          leon.adventure.targetPositions,\
-          index(leon.adventure.targetPositions, sub(field,d2i(curPos)*4+1,3),0),\
+          index(leon.adventure.targetPositions, {getTPos(idx)}, 0),\
           99999\
         ),\
-        leon.adventure.targetPositions\
-      )\
-    )
-        field = if(false==contains(leon.adventure.targetPositions,{posToString(targetPos)}) ||\
-                len(leon.adventure.targetPositions) <= 4 || sub(field,d2i(curPos)*4+1,3)==sub(leon.adventure.targetPositions,index(leon.adventure.targetPositions,{posToString(targetPos)},0)+4,3),\
-            {replace(field,d2i(curPos)*4+1,{posToString(targetPos)},3)},field)
-        curPos = {nextFieldInverse(sub(field,d2i(curPos)*4,1))}
-      goto(if(sub(field,d2i(curPos)*4,1)!="S",innerLoop2,if(len(lootPositions)>0,loop2,end)))
+    leon.adventure.targetPositions\
+  )\
+)
+
+{setTPos(\
+  idx,\
+  if(\
+    false == contains(leon.adventure.targetPositions, targetPos)\
+      || {getTPos(idx)} == sub(leon.adventure.targetPositions, index(leon.adventure.targetPositions, targetPos, 0) + 5, 4),\
+    targetPos,\
+    {getTPos(idx)}\
+  )\
+)}
+curPos += {nextDirInverse({getField(idx)})}
+goto(if(\
+  {getField({posToString(x(curPos), y(curPos))})} != "S",\
+  innerLoop2,\
+  if(len(lootPositions) > 0, loop2, end)\
+))
+
 end:
-  wait(0.)
+wait(0.)

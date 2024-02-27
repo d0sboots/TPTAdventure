@@ -2,53 +2,57 @@
 :name {package}:find path
 
 :global string leon.adventure.path
-:global double leon.adventure.target_pos
+:global string leon.adventure.targetPositions
 :global int turbo.cycles.max
 :global int turbo.cycles
 
-:local double curPos
+:local vector curPos
 :local string queue
-:local string field
+:local string idx
 :local string path
 
-#distance(x,y) ({x}%19.)-({y}%19.)+floor({x}/19.)-floor({y}/19.)
+#setField(index, value) lss("_f" . {index}, {value})
+#getField(index) lsg("_f" . {index})
 
 start:
 turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
-queue = {posToString(x(adventure.playerPos()) + 19. * y(adventure.playerPos()))} . "S:"
-field = "{lua(return string.rep("0",362))}"
+queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
 loop1:
-    curPos = {firstElementPos}
-    field = {replace(field, d2i(curPos), {firstElementDir}, 1)}
-    {pop}
-    queue= queue .\
-        if(false == adventure.isWall({posToVec({goUp})}) && \
-            false == contains(queue,{posToString({goUp})}) && \
-            {goUp}<361. &&\
-            sub(field,d2i({goUp}),1)=="0" ,\
-            concat({posToString({goUp})},"U:"),"") .\
-        if(false == adventure.isWall({posToVec({goDown})}) && \
-            false == contains(queue,{posToString({goDown})}) && \
-            {goDown}>=0. &&\
-            sub(field,d2i({goDown}),1)=="0" , \
-            {posToString({goDown})} . "D:", "") .\
-        if(false == adventure.isWall({posToVec({goRight})}) && \
-            false == contains(queue,{posToString({goRight})}) && \
-            sub(field,d2i({goRight}),1)=="0"&&\
-            {distance({goRight},curPos)}<=1.,\
-            {posToString({goRight})} . "R:", "") .\
-        if(false == adventure.isWall({posToVec({goLeft})}) && \
-            false == contains(queue,{posToString({goLeft})}) && \
-            sub(field,d2i({goLeft}),1) == "0"&&\
-            {distance({goLeft},curPos)}<=1.,\
-            {posToString({goLeft})} . "L:", "")
-  gotoif(loop1,len(queue)>0&&curPos!=leon.adventure.target_pos)
+curPos = {firstElementPos}
+idx = sub(queue, 0, 4)
+{setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
+queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
+  "",\
+  if(\
+    adventure.isWall(curPos + vec(0., 1.)) || y(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(0., -1.)) || y(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(1., 0.)) || x(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(-1., 0.)) || x(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
+  )\
+)
+goto(if(\
+  queue == "" || contains(idx, sub(leon.adventure.targetPositions, 0, 4)),\
+  l2start,\
+  loop1\
+))
+
 loop2:
-    path=sub(field,d2i(curPos),1) . path
-    curPos=if(sub(path,0,1)=="U",{goDown},if(sub(path,0,1)=="D",{goUp},\
-        if(sub(path,0,1)=="R",{goLeft},if(sub(path,0,1)=="L",{goRight},curPos))))
-  gotoif(loop2,sub(field,d2i(curPos),1)!="S")
-leon.adventure.path = if(path=="S","",path)
+path = {getField(idx)} . path
+curPos += {nextDirInverse(sub(path, 0, 1))}
+idx = {posToString(x(curPos), y(curPos))}
+l2start:
+gotoif(loop2, {getField(idx)} != "S")
+
 executesync("{package}:refine path")
-end:
 wait(0.0)

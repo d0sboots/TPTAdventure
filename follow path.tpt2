@@ -2,39 +2,50 @@
 :name {package}:follow path
 
 :global string leon.adventure.path
-:global int leon.adventure.running
+:global bool leon.adventure.running
 
 :local int stepCount
-:local double curPos
+:local vector curPos
 :local string status
 
-#nextDirection sub(leon.adventure.path,stepCount,1)
+#nextDirection sub(leon.adventure.path, stepCount, 1)
 #nextMove {move({nextDirection})}
+#curEntity adventure.entityType(curPos + {nextDir({nextDirection})})
 
-#playerPos x(adventure.playerPos())+19.*y(adventure.playerPos())
-#status adventure.entityType({posToVec({nextField({nextDirection})})})
+goto(start)
 
-stepCount = -1
-loop:
-stepCount+=1
-goto(ternary.int(stepCount>=len(leon.adventure.path)||leon.adventure.running!=1,end,ternary.int({nextDirection}=="B",bomb,ternary.int({nextDirection}=="W",wait,move))))
-move:
-    curPos = {playerPos}
-    status = {status}
-    move2:
-      executesync("TE2.2:stop")
-      adventure.move({nextMove})
-      executesync("TE2.2:start")
-  goto(ternary.int(curPos!={playerPos}||status!={status},loop,move2))
 bomb:
-    executesync("TE2.2:stop")
-    adventure.placeBomb()
-    executesync("TE2.2:start")
-  goto(loop)
+adventure.placeBomb()
+goto(move)
+
 wait:
-    executesync("TE2.2:stop")
-    adventure.wait()
-    executesync("TE2.2:start")
-  goto(loop)
+adventure.wait()
+
+move:
+stepCount += 1
+start:
+curPos = adventure.playerPos()
+
+move2:
+executesync("TE2.2:stop")
+adventure.move({nextMove})  ; This is a no-op for invalid (0,0) moves
+executesync("TE2.2:start")
+
+loop:
+; This uses the spacing of unused values in the index expression to be equivalent
+; to lines to skip *backward*. This is much cheaper than having a nested ternary.
+; index returns -1 for the fallthrough case. (UDLR -> move)
+goto(if(\
+  contains("BW", {nextDirection})\
+    || x(curPos) != x(adventure.playerPos())\
+    || y(curPos) != y(adventure.playerPos()),\
+  if(\
+    stepCount < len(leon.adventure.path) && leon.adventure.running,\
+    (move - 1) - index("W B", {nextDirection}, 0),\
+    end\
+  ),\
+  move2\
+))
+
 end:
 wait(0.)
