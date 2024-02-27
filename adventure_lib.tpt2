@@ -1,19 +1,16 @@
-#package Adventure v3.0
-
-#abs(x) ((({x})^2.)^0.5)
-
-#xMove(d) if({d}=="L",-1.,ternary.double({d}=="R",1.,0.))
-#yMove(d) if({d}=="U",1.,ternary.double({d}=="D",-1.,0.))
-#move(d) vec({xMove({d})},{yMove({d})})
+#package Adventure v3.1
 
 #strToVec(str) vec(s2d(sub({str}, 0, 2), -1.), s2d(sub({str}, 2, 2), -1.))
-#posToString(x, y) sub(d2s(({x}) + 100.), 1, 2) . sub(d2s(({y}) + 100.), 1, 2)
+#posToString(x, y) sub(d2s(({x}) + 200.), 1, 2) . sub(d2s(({y}) + 200.), 1, 2)
 #firstElementPos {strToVec(queue)}
 #firstElementDir sub(queue, 4, 1)
-#cur_difficultyP1 {abs(x(adventure.roomCoords()) + y(adventure.roomCoords()) - 254.)} + 1.
-#nextX(d) s2d(sub("X 0 0-1 1", index(" U D R L", {d}, 0), 2), 0.)
-#nextY(d) s2d(sub("X-1 1 0 0", index(" U D R L", {d}, 0), 2), 0.)
+#cur_difficulty(offset) (max(254. - x(adventure.roomCoords()), x(adventure.roomCoords())) + max(254. - y(adventure.roomCoords()), y(adventure.roomCoords())) + ({offset} - 254.))
+#survivable(difficulty) (\
+  ceil(i2d(adventure.playerAttack()) * if(adventure.hasItem("impaler"), 1.1, 1.)) >=\
+    round({difficulty} * 0.38 + 1.) + round({difficulty} * 0.08)\
+    || i2d(adventure.playerArmor()) >= ceil({difficulty} * 0.39)\
+) && i2d(leon.adventure.maxDifficulty) >= {difficulty}\
+  && (adventure.hasItem("lantern") || {difficulty} < 100.)
+#nextX(d) s2d(sub("X 0 0 1-1", index(" U D R L", {d}, 0), 2), 0.)
+#nextY(d) s2d(sub("X 1-1 0 0", index(" U D R L", {d}, 0), 2), 0.)
 #nextDir(d) vec({nextX({d})}, {nextY({d})})
-#nextXInverse(d) s2d(sub("X 0 0 1-1", index(" U D R L", {d}, 0), 2), 0.)
-#nextYInverse(d) s2d(sub("X 1-1 0 0", index(" U D R L", {d}, 0), 2), 0.)
-#nextDirInverse(d) vec({nextXInverse({d})}, {nextYInverse({d})})

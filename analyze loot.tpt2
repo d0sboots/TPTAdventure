@@ -3,19 +3,17 @@
 
 :global string leon.adventure.targetPositions
 
-:global string queue
-:global string idx
-:global vector curPos
-:global string targetPos
-:global string lootPositions
+:local string queue
+:local string idx
+:local vector curPos
+:local string targetPos
+:local string lootPositions
 
 #setField(index, value) lss("_f" . {index}, {value})
 #getField(index) lsg("_f" . {index})
 #setTPos(index, value) lss("_t" . {index}, {value})
 #getTPos(index) lsg("_t" . {index})
 
-curPos = vec(0., 0.)
-idx = ""
 queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
 
 ; On the first entry of this loop, the junk entry "_f" will be set to "S".
@@ -65,8 +63,8 @@ innerLoop2:
 idx = {posToString(x(curPos), y(curPos))}
 leon.adventure.targetPositions = if(\
   {getField({posToString(\
-    x(curPos) + {nextXInverse({getField(idx)})},\
-    y(curPos) + {nextYInverse({getField(idx)})}\
+    x(curPos) - {nextX({getField(idx)})},\
+    y(curPos) - {nextY({getField(idx)})}\
   )})} == "S"\
     && false == contains(leon.adventure.targetPositions, targetPos),\
   targetPos . ":" . leon.adventure.targetPositions,\
@@ -97,7 +95,7 @@ leon.adventure.targetPositions = if(\
     {getTPos(idx)}\
   )\
 )}
-curPos += {nextDirInverse({getField(idx)})}
+curPos -= {nextDir({getField(idx)})}
 goto(if(\
   {getField({posToString(x(curPos), y(curPos))})} != "S",\
   innerLoop2,\

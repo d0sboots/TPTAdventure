@@ -37,7 +37,7 @@ gss("---Stop hiding---", "</size=0>")
 loop:
 executesync("{package}:clear room")
 leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if(\
-  {cur_difficultyP1} > i2d(leon.adventure.maxDifficulty)\
+  {cur_difficulty(0.)} >= i2d(leon.adventure.maxDifficulty)\
     && adventure.isCompleted(adventure.roomCoords()),\
   2,\
   0\

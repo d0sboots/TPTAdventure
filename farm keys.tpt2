@@ -10,11 +10,11 @@ goto(start)
 
 next:
 leon.adventure.path = dir
-executesync("leon.adventure:follow path")
-executesync("leon.adventure:kill enemies")
+executesync("{package}:follow path")
+executesync("{package}:kill enemies")
 leon.adventure.path = sub("DURL", index("UDLR", dir, 0), 1)
-executesync("leon.adventure:follow path")
-executesync("leon.adventure:kill enemies")
+executesync("{package}:follow path")
+executesync("{package}:kill enemies")
 start:
 dir = sub("XU   D  L  R", index(" 918 90 09 189", x(adventure.playerPos()) . y(adventure.playerPos()), 0), 1)
 goto(if(\

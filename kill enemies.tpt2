@@ -12,7 +12,7 @@ key.k()
 
 isopen("arcade")
 
-goto(if(contains(impulse(), "key"), turbostart, loop))
+goto(if(contains(impulse(), "key."), turbostart, loop))
 wait:
 adventure.wait()
 
@@ -30,7 +30,7 @@ goto(if(\
   if(\
     max(max(adventure.countEntities("Enemy"), adventure.countEntities("Elite")), adventure.countEntities("Mimic")) > 0,\
     wait,\
-    if(impulse()=="key.k", stop, end)\
+    if(contains(impulse(), "key."), stop, end)\
   )\
 ))
 stop:

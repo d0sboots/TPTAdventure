@@ -6,6 +6,7 @@
 :global string leon.adventure.targetPositions
 
 :global string leon.adventure.room_direction
+:local double difficulty
 
 #nextRoomLower if(\
   x(adventure.roomCoords()) < 127.0 && y(adventure.roomCoords()) >= 127.0,\
@@ -21,24 +22,18 @@
   )\
 )
 #rotateLeft(x) sub("LDRU", index("ULDR", {x}, 0), 1)
+#condRotateLeft(cond, x) sub(if({cond}, "LDRU", "ULDR"), index("ULDR", {x}, 0), 1)
 
 executesync("{package}:kill enemies")
 executesync("{package}:farm keys")
 
 ; We check based on current difficulty plus 1, because it's more efficient
 ; that way.
+difficulty = {cur_difficulty(1.)}
 leon.adventure.room_direction = if(\
-  {cur_difficultyP1} == 1. && len(leon.adventure.room_direction) > 0,\
+  difficulty == 1. && leon.adventure.room_direction != "",\
   {rotateLeft(leon.adventure.room_direction)},\
-  if(\
-    (\
-      i2d(adventure.playerAttack()) >=\
-        round({cur_difficultyP1} * 0.38 + 1.) + round({cur_difficultyP1} * 0.08)\
-        || i2d(adventure.playerArmor()) >= ceil({cur_difficultyP1} * 0.39)\
-    ) && i2d(leon.adventure.maxDifficulty) >= {cur_difficultyP1},\
-    {rotateLeft({nextRoomLower})},\
-    {nextRoomLower}\
-  )\
+  {condRotateLeft({survivable(difficulty)}, {nextRoomLower})}\
 )
 
 leon.adventure.targetPositions = sub(\
@@ -48,7 +43,7 @@ leon.adventure.targetPositions = sub(\
 ) . ":"
 
 executesync("{package}:find loot")
-leon.adventure.path=leon.adventure.room_direction
+leon.adventure.path = leon.adventure.room_direction
 executesync("{package}:follow path")
 end:
 wait(0.)
