@@ -24,7 +24,6 @@
 #rotateLeft(x) sub("LDRU", index("ULDR", {x}, 0), 1)
 #condRotateLeft(cond, x) sub(if({cond}, "LDRU", "ULDR"), index("ULDR", {x}, 0), 1)
 
-executesync("{package}:kill enemies")
 executesync("{package}:farm keys")
 
 ; We check based on current difficulty plus 1, because it's more efficient

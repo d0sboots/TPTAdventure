@@ -1,4 +1,4 @@
-#package Adventure v3.1
+#package Adventure v3.2
 
 #strToVec(str) vec(s2d(sub({str}, 0, 2), -1.), s2d(sub({str}, 2, 2), -1.))
 #posToString(x, y) sub(d2s(({x}) + 200.), 1, 2) . sub(d2s(({y}) + 200.), 1, 2)
