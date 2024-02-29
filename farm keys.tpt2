@@ -14,7 +14,7 @@
 
 #needs_bombs adventure.bombs() < 99 && difficulty >= 80. && adventure.hasItem("leechSword")
 #needs_health adventure.playerHealth() < 99 && adventure.hasItem("leechSword")
-#needs_mana adventure.mana() < 99 && adventure.hasItem("manaReaver")
+#needs_mana adventure.mana() < 99 && adventure.hasItem("manaReaver") && adventure.hasItem("bookSpells")
 #needs_keys adventure.keys() <= 10
 #num_enemies round(difficulty * 0.1 + 3.)
 #elite_dmg d2i(floor(difficulty * 0.01 + 1.)) * (d2i(ceil(ceil(difficulty * 0.39) * 1.5)) - adventure.playerArmor())
