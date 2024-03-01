@@ -4,7 +4,7 @@
 
 This script will fully automatically play the adventure game for you.
 It will start by farming 11 keys, so don't wonder if it apears to be stuck betwenn the starting room and the first room.
-After it has the keys it will start to clear the rooms always aiming for the highest difficulty it can safely defeat, farming keys whenever necessary.
+After it has the keys it will start to clear the rooms always aiming for the highest difficulty it can safely defeat, farming keys whenever necessary. It will also farm health, mana and bombs, once you have purchased the appropriate items. (Health requires the leech sword, Mana requires the mana sword and the spellbook, Bombs require the leech sword and distance 80+.)
 
 ## Requirements
 - 9 Script slots
@@ -16,16 +16,13 @@ After it has the keys it will start to clear the rooms always aiming for the hig
 ## Strategy
 The script tries to reach the highest difficulty possible so you are guaranteed to either take no damage from enemies or you can one-hit them. Secondly there is a variable called leon.adventure.maxDifficulty, which is visible in the top right. It will not go past this difficulty until it completed a whole round on this difficulty. Once it reaches a room, that has already been cleared, at the targeted difficulty it will increase the maxDifficulty by 2 and therefore start a new round on the slightly higher difficulty.
 My recomendation to use this feature is, set the maxDifficultyInit in the init script to 81 and buy either 4 or 5 armor cheats. This will result in an afk time of 20 or 25 hours. If you want longer afk times you can decrease the maxDifficultyInit by steps of 2. Or you can checkout the [Adventure Primer](https://discord.com/channels/488444879836413975/1205539307968929832/1205686494165999666) in the pins on the discussion channel on the discord, and derive your initial level and your amount of cheat armor from the linked table. Just take the maximum difficulty possible with the amount of cheat armor you bought/are planning to buy and decrease by a multiple of 2.
-The AI takes just under 30 seconds on average per room on difficulty 80.
-If you don't have to many tokens you should buy at least 1 armor cheat, otherwise you will get stuck on difficulty 38.
+The AI takes just under 30 seconds on average per room on difficulty 80, or a bit faster with the phase boots.
+To get past difficulty 38 you will either need to buy an armor cheat or the voidforged impaler.
 
 ## Usage
 To Start the script press R. To stop the script press R again.
 If you want to restart the script but already reached or surpassed the maxDifficultyInit you can press I to set leon.adventure.maxDifficulty to maxDifficultyInit and the use U and J to increase or decrease leon.adventure.maxDifficulty.
 You also can press K to kill all enemies while the script is not running.
-
-## Import
-For me at least the game freezes during the import for multiple seconds and does not display any text in the box after it unfreezes and the only indicator it is done is, that the cursor is blinking somewhere in the last row.
 
 ### Bundle Import:
 ```
