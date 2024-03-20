@@ -1,8 +1,8 @@
 :import adventure_lib
 :name {package}:follow path
 
-:global string leon.adventure.path
 :global bool leon.adventure.running
+:global string leon.adventure.path
 
 :local int stepCount
 :local vector curPos
@@ -13,7 +13,11 @@
 #nextMove {nextDir({nextDirection})}
 #curEntity adventure.entityType(curPos + {nextDir({nextDirection})})
 
-goto(start)
+goto(if(\
+  isopen("arcade") && leon.adventure.running,\
+  start,\
+  end\
+))
 
 bomb:
 adventure.placeBomb()
@@ -39,7 +43,7 @@ loop:
 ; to lines to skip *backward*. This is much cheaper than having a nested ternary.
 ; index returns -1 for the fallthrough case. (UDLR -> move)
 goto(if(\
-  stepCount < len(leon.adventure.path) && leon.adventure.running,\
+  stepCount < len(leon.adventure.path) && leon.adventure.running && isopen("arcade"),\
   if(\
     contains("BW", {nextDirection})\
       || x(curPos) != x(adventure.playerPos())\

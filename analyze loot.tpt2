@@ -1,8 +1,6 @@
 :import adventure_lib
 :name {package}:analyze loot
 
-:global string leon.adventure.targetPositions
-
 :local string queue
 :local string idx
 :local vector curPos
@@ -52,7 +50,7 @@ queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
 gotoif(loop1, queue != "")
 
 continue:
-lootPositions = leon.adventure.targetPositions . lootPositions
+lootPositions = {target_positions} . lootPositions
 
 loop2:
 targetPos = sub(lootPositions, 0, 4)
@@ -61,36 +59,36 @@ lootPositions = sub(lootPositions, 5, 99999)
 
 innerLoop2:
 idx = {posToString(x(curPos), y(curPos))}
-leon.adventure.targetPositions = if(\
+global.string.set({target_pos_var}, if(\
   {getField({posToString(\
     x(curPos) - {nextX({getField(idx)})},\
     y(curPos) - {nextY({getField(idx)})}\
   )})} == "S"\
-    && false == contains(leon.adventure.targetPositions, targetPos),\
-  targetPos . ":" . leon.adventure.targetPositions,\
+    && false == contains({target_positions}, targetPos),\
+  targetPos . ":" . {target_positions},\
   if(\
-    false == contains(leon.adventure.targetPositions, targetPos) \
+    false == contains({target_positions}, targetPos) \
       && {getTPos(idx)} != "",\
       sub(\
-        leon.adventure.targetPositions,\
+        {target_positions},\
         0,\
-        index(leon.adventure.targetPositions, {getTPos(idx)}, 0)\
+        index({target_positions}, {getTPos(idx)}, 0)\
       )\
         . targetPos . ":"\
         . sub(\
-          leon.adventure.targetPositions,\
-          index(leon.adventure.targetPositions, {getTPos(idx)}, 0),\
+          {target_positions},\
+          index({target_positions}, {getTPos(idx)}, 0),\
           99999\
         ),\
-    leon.adventure.targetPositions\
+    {target_positions}\
   )\
-)
+))
 
 {setTPos(\
   idx,\
   if(\
-    false == contains(leon.adventure.targetPositions, targetPos)\
-      || {getTPos(idx)} == sub(leon.adventure.targetPositions, index(leon.adventure.targetPositions, targetPos, 0) + 5, 4),\
+    false == contains({target_positions}, targetPos)\
+      || {getTPos(idx)} == sub({target_positions}, index({target_positions}, targetPos, 0) + 5, 4),\
     targetPos,\
     {getTPos(idx)}\
   )\

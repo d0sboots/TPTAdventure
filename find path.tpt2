@@ -1,10 +1,9 @@
 :import adventure_lib
 :name {package}:find path
 
-:global string leon.adventure.path
-:global string leon.adventure.targetPositions
 :global int turbo.cycles.max
 :global int turbo.cycles
+:global string leon.adventure.path
 
 :local vector curPos
 :local string queue
@@ -63,7 +62,7 @@ queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
   )\
 )
 goto(if(\
-  queue == "" || contains(idx, sub(leon.adventure.targetPositions, 0, 4)),\
+  queue == "" || contains(idx, sub({target_positions}, 0, 4)),\
   l2start,\
   loop1\
 ))
