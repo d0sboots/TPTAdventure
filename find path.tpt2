@@ -15,8 +15,17 @@
 #setField(index, value) lss("_f" . {index}, {value})
 #getField(index) lsg("_f" . {index})
 
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
+; In the worst-case, we have to explore (17*17+4) tiles because the boots
+; of phasing let us travel to every interior square, and each explored square
+; costs us 13 cycles. (4 directions * 3 instructions in the skip_field loop,
+; plus 1 for setField on the explored square itself.) This comes to 3809 cycles,
+; and we add a few hundred extra for additional loops needed to finish before
+; the frame ends.
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4500)
 leon.adventure.path = ""
+; Determine whether the boots of phasing can be used, which will adjust our
+; pathfinding. This is only used in one place, but pre-calculating this expression
+; saves evaluation nodes inside a hot loop.
 cantPhase = false == adventure.hasItem("bootsPhasing")\
 || 0 < max(\
   max(\
@@ -28,43 +37,74 @@ cantPhase = false == adventure.hasItem("bootsPhasing")\
   ),\
   adventure.countEntities("Mimic")\
 )
+; The queue records the moves that need to be evaluated by the BFS search.
+; The format is 4-length position, 1-length direction, ":" delimiter.
+; The colon is completely unneeded in the current version, but it helps align the
+; base64 encoding and thus the code compresses better.
+;
+; The direction is the direction that was taken to get *to* this state, and is
+; recorded in the setField array as-is. It is needed to reconstruct the shortest
+; path later.
 queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
-loop1:
-curPos = {firstElementPos}
+
+; This isn't needed for the BFS, but rather for the loop that comes later. It's
+; more convenient to set it now.
+curPos = {strToVec({target_positions})}
+
+; Every iteration of this loop takes 4 cycles for a new tile (3 for an already-seen tile)
+; and pops a state off the queue. All the logic for whether or not to process a tile
+; is done in the goto(), by selecting where to jump to. This choice is then mirrored
+; in the queue-update, by checking getField() to see if the field was set.
+;
+; Putting it another way: Every processed tile adds 4 new tiles to the queue, regardless
+; of if they are valid. Checking if they are valid is handled when they are popped
+; *off* the queue. Doing it this way costs a few extra cycles, due to more iterations,
+; but the cycles are also cheaper because we aren't duplicating the logic.
+bfs_setfield:
+{setField(sub(queue, 0, 4), {firstElementDir})}
+skip_field:
 idx = sub(queue, 0, 4)
-{setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
-queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
-  "",\
-  if(\
-    adventure.isWall(curPos + vec(0., 1.)) && cantPhase\
-      || max(x(curPos), y(curPos)) >= 18.\
-      || x(curPos) < 1.,\
-    "",\
-    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
-  ) . if(\
-    adventure.isWall(curPos + vec(0., -1.)) && cantPhase\
-      || min(x(curPos), y(curPos)) < 1.\
-      || x(curPos) >= 18.,\
-    "",\
-    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
-  ) . if(\
-    adventure.isWall(curPos + vec(1., 0.)) && cantPhase\
-      || max(x(curPos), y(curPos)) >= 18.\
-      || y(curPos) < 1.,\
-    "",\
-    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
-  ) . if(\
-    adventure.isWall(curPos + vec(-1., 0.)) && cantPhase\
-      || min(x(curPos), y(curPos)) < 1.\
-      || y(curPos) >= 18.,\
-    "",\
-    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
-  )\
+; These funky macros are a way to directly add or subtract 1 to a two digit number
+; that is already expressed as a string, and have the result as a string. Although the
+; tables here are a little long, this is actually cheaper (especially in nodes) than
+; the straightforward way of doing it.
+; The colon is to prevent a spurious match for "10" that would otherwise occur
+; early in the string.
+#incstr(x) sub("0102:0304050607080910111213141516171819", index("0001:0203040506070809101112131415161718", {x}, 0), 2)
+#decstr(x) sub("9900:0102030405060708091011121314151617", index("0001:0203040506070809101112131415161718", {x}, 0), 2)
+; The parenthesis are here to adjust the concat-tree for better compression,
+; they don't affect the result at all.
+queue = sub(queue, 6, 99999) . if(\
+  contains({getField(idx)}, {firstElementDir}), (\
+    (sub(idx, 0, 2) . {incstr(sub(idx, 2, 2))} . "U:") .\
+    (sub(idx, 0, 2) . {decstr(sub(idx, 2, 2))} . "D:") .\
+    ({incstr(sub(idx, 0, 2))} . sub(idx, 2, 2) . "R:") .\
+    ({decstr(sub(idx, 0, 2))} . sub(idx, 2, 2) . "L:")\
+  ),\
+  ""\
 )
+; The contains-checks here are using string-based checking to cheaply check boundary
+; conditions: We want to stop if we go off the edge (which is only possible at 4
+; specific tiles), and also even though phasing boots let us ignore walls, they *don't*
+; ignore the boundary walls, so we need to check for that.
+; Although we can check the high bounds by looking for "18", the low bounds require
+; checking individual coordinates because "00" could otherwise match inside "1004"
+; and similar.
 goto(if(\
-  queue == "" || contains(idx, sub({target_positions}, 0, 4)),\
+  contains(idx, sub({target_positions}, 0, 4)),\
   l2start,\
-  loop1\
+  if(\
+    contains("UDLRS", {getField(sub(queue, 0, 4))})\
+      || adventure.isWall({strToVec(queue)}) && (\
+        cantPhase ||\
+        contains(sub(queue, 0, 2), "00") ||\
+        contains(sub(queue, 2, 2), "00") ||\
+        contains(sub(queue, 0, 4), "18")\
+      )\
+      || contains("9909:1909:0999:0919", sub(queue, 0, 4)),\
+    skip_field,\
+    bfs_setfield\
+  )\
 ))
 
 loop2:
