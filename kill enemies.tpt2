@@ -1,6 +1,8 @@
 :import adventure_lib
 :name {package}:kill enemies
 
+:budget_cap max
+
 :global bool leon.adventure.running
 
 key.k()
@@ -33,9 +35,8 @@ wait:
 adventure.wait()
 
 attack:
-executesync("TE2.2:stop")
+waitframe()
 adventure.move({enemyDirection})
-executesync("TE2.2:start")
 
 loop:
 gotoif(\

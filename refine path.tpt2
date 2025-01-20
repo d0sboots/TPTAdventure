@@ -1,6 +1,8 @@
 :import adventure_lib
 :name {package}:refine path
 
+:budget_cap max
+
 :global string leon.adventure.path
 
 :local vector curPos

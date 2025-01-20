@@ -1,6 +1,8 @@
 :import adventure_lib
 :name {package}:farm keys
 
+:budget_cap 1
+
 :global int leon.adventure.maxDifficulty
 :global bool leon.adventure.running
 :global string leon.adventure.path

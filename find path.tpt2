@@ -1,8 +1,8 @@
 :import adventure_lib
 :name {package}:find path
 
-:global int turbo.cycles.max
-:global int turbo.cycles
+:budget_cap 1
+
 :global string leon.adventure.path
 
 :local vector curPos
@@ -15,9 +15,8 @@
 #setField(index, value) lss("_f" . {index}, {value})
 #getField(index) lsg("_f" . {index})
 
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 leon.adventure.path = ""
-cantPhase = false == adventure.hasItem("bootsPhasing")\
+cantPhase = not(adventure.hasItem("bootsPhasing"))\
 || 0 < max(\
   max(\
     max(\

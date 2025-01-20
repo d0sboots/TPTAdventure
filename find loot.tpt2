@@ -1,8 +1,10 @@
 :import adventure_lib
 :name {package}:find loot
 
-:global int turbo.cycles.max
-:global int turbo.cycles
+:budget_cap 101
+; using 101 so that the first executesync() doesn't
+; use up all our budget when executed by init
+
 :global int leon.adventure.maxDifficulty
 :global bool leon.adventure.running
 :global string leon.adventure.path
@@ -71,7 +73,6 @@ global.string.set({target_pos_var}, sub(\
     4\
 ) . ":")
 
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 executesync("{package}:analyze loot")
 loop:
 executesync("{package}:find path")
