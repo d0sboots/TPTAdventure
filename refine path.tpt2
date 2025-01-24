@@ -8,6 +8,8 @@
 :local vector curPos
 :local int stepCount
 
+#has_hammer adventure.hasItem("hammer")
+
 #curDirection sub(leon.adventure.path, stepCount, 1)
 #insert(st,i,val) sub({st},0,{i}) . ({val}) . sub({st},{i},99999)
 #escapeDirection if(\
@@ -42,21 +44,20 @@ leon.adventure.path = {insert(\
   stepCount,\
   if(adventure.hasItem("eodArmor"), "BWWW", {escapeDirection})\
 )}
-stepCount += if(adventure.hasItem("eodArmor"), 4, 6)
+stepCount = stepCount + if(adventure.hasItem("eodArmor"), 4, 6)
 
 nextTile:
-curPos += {nextDir({curDirection})}
-stepCount += 1
+curPos = curPos + {nextDir({curDirection})}
+stepCount = stepCount + 1
 
 start:
 goto(if(\
   stepCount >= len(leon.adventure.path),\
   end,\
   if(\
-    adventure.entityType(curPos + {nextDir({curDirection})}) != "Rock" || adventure.hasItem("hammer"),\
+    adventure.entityType(curPos + {nextDir({curDirection})}) != "Rock" || {has_hammer},\
     nextTile,\
     rock\
   )\
 ))
 end:
-wait(0.)

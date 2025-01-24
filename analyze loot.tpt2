@@ -14,7 +14,7 @@
 #setTPos(index, value) lss("_t" . {index}, {value})
 #getTPos(index) lsg("_t" . {index})
 
-queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
+queue = {vecToString(adventure.playerPos())} . "S:"
 
 ; On the first entry of this loop, the junk entry "_f" will be set to "S".
 ; This has no effect.
@@ -23,84 +23,127 @@ queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
 loop1:
 curPos = {firstElementPos}
 idx = sub(queue, 0, 4)
+
+; Add a position if it's not been processed and if it has a chest in it
 lootPositions = if(\
-  {getField(idx)} == ""\
-    && contains(adventure.entityType(curPos), "Chest"),\
-  {posToString(x(curPos), y(curPos))} . ":",\
-  "") . lootPositions
+  {getField(idx)} == "" && contains(adventure.entityType(curPos), "Chest"),\
+  {vecToString(curPos)} . ":" . lootPositions,\
+  lootPositions\
+)
 {setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
-queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
-  "",\
-  if(\
-    adventure.isWall(curPos + vec(0., 1.)) || y(curPos) >= 18.,\
+
+; If we've not added a position, pop the processed position
+; otherwise, pop the processed position and look at
+; the neighbouring 4 positions and
+; add all non-wall positions to the queue
+queue = if(\
+  {getField(idx)} != {firstElementDir},\
+  sub(queue, 6, 99999),\
+  sub(queue, 6, 99999) . if(\
+    adventure.isWall(curPos + vec(0.0, 1.0)) || y(curPos) >= 18.0,\
     "",\
-    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
+    {posToString(x(curPos), y(curPos) + 1.0)} . "U:"\
   ) . if(\
-    adventure.isWall(curPos + vec(0., -1.)) || y(curPos) < 1.,\
+    adventure.isWall(curPos + vec(0., -1.0)) || y(curPos) < 1.0,\
     "",\
-    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
+    {posToString(x(curPos), y(curPos) - 1.0)} . "D:"\
   ) . if(\
-    adventure.isWall(curPos + vec(1., 0.)) || x(curPos) >= 18.,\
+    adventure.isWall(curPos + vec(1., 0.0)) || x(curPos) >= 18.0,\
     "",\
-    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
+    {posToString(x(curPos) + 1.0, y(curPos))} . "R:"\
   ) . if(\
-    adventure.isWall(curPos + vec(-1., 0.)) || x(curPos) < 1.,\
+    adventure.isWall(curPos + vec(-1.0, 0.)) || x(curPos) < 1.0,\
     "",\
-    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
+    {posToString(x(curPos) - 1.0, y(curPos))} . "L:"\
   )\
 )
-gotoif(loop1, queue != "")
+; Every position is ended with `:` so we should
+; repeat the loop until queue no longer has the character `:`
+; i.e until we've added a field for every tile in the room
+gotoif(loop1, contains(queue, ":"))
 
 continue:
 lootPositions = {target_positions} . lootPositions
+; add the loot positions to our target positions
 
 loop2:
-targetPos = sub(lootPositions, 0, 4)
-curPos = {strToVec(targetPos)}
-lootPositions = sub(lootPositions, 5, 99999)
+targetPos = sub(lootPositions, 0, 4) ; get the next loot position
+curPos = {strToVec(targetPos)} ; set our curPos to our position
+lootPositions = sub(lootPositions, 5, 99999) ; pop the previous loot position
 
 innerLoop2:
-idx = {posToString(x(curPos), y(curPos))}
+idx = {vecToString(curPos)} ; stringify our curPos to access our fields
+
+; you could do contains(getField(vecToString(curPos - nextDir(getField(idx))))) here
+; but I don't know if the extra block count is worth it
+; 
+; lsg = 1
+; concat = 2
+; sub = 3
+; d2s = 2
+; posToString = concat + sub + d2s + sub + d2s = 12
+; a.d = 3
+; x = 1
+; index = 3
+; nextX = nextY = s2d + sub + index = 8
+; getField = lsg + concat = 3
+; comparison.string = 3
+; 3 + 12 + 3 + 1 + 8 + 3 + 1 + 8 + 3 = 42
+; 
+; vecToString = x + y + posToString = 1 + 1 + 12 = 14
+; a.v = a.d = 3
+; nextDir = vec + nextX + nextY = 18
+; 3 + 14 + 3 + 18 = 38
+
+; insert our loot positions into our target_positions
+; 
+; make our loot position the head if it can be accessed by our start and
+; it hasn't already been added to the target_positions
+; 
+; otherwise, don't insert if the target position hasn't been recorded yet or
+; if it has already been inserted in our target_positions
+; 
+; otherwise, insert a step to reach our loot position?
 global.string.set({target_pos_var}, if(\
-  {getField({posToString(\
-    x(curPos) - {nextX({getField(idx)})},\
-    y(curPos) - {nextY({getField(idx)})}\
-  )})} == "S"\
-    && false == contains({target_positions}, targetPos),\
+  "S" == {getField({vecToString(curPos - {nextDir({getField(idx)})})})} \
+    && not(contains({target_positions}, targetPos)),\
   targetPos . ":" . {target_positions},\
   if(\
-    false == contains({target_positions}, targetPos) \
-      && {getTPos(idx)} != "",\
-      sub(\
-        {target_positions},\
-        0,\
-        index({target_positions}, {getTPos(idx)}, 0)\
-      )\
-        . targetPos . ":"\
-        . sub(\
-          {target_positions},\
-          index({target_positions}, {getTPos(idx)}, 0),\
-          99999\
-        ),\
-    {target_positions}\
+    contains({target_positions}, targetPos) || contains("", {getTPos(idx)}),\
+    {target_positions},\
+    sub({target_positions}, 0, index({target_positions}, {getTPos(idx)}, 0))\
+      . targetPos . ":" \
+      . sub({target_positions}, index({target_positions}, {getTPos(idx)}, 0), 99999)\
   )\
 ))
 
+; set a target position if it hasn't been added to the target_positions
+; or overwrite the target position if its contents is with target positions?
 {setTPos(\
   idx,\
   if(\
-    false == contains({target_positions}, targetPos)\
-      || {getTPos(idx)} == sub({target_positions}, index({target_positions}, targetPos, 0) + 5, 4),\
+    not(contains({target_positions}, targetPos)) || contains(\
+      {getTPos(idx)}, \
+      sub({target_positions}, index({target_positions}, targetPos, 0) + 5, 4)\
+    ),\
     targetPos,\
     {getTPos(idx)}\
   )\
 )}
-curPos -= {nextDir({getField(idx)})}
+
+; Update our curPos to the next tile
+; 
+; We're actually working backwards, from the desired loot position back to
+; our starting position, so this "next tile" is a tile closer to the player
+curPos = curPos - {nextDir({getField(idx)})}
+; return to the innerLoop2 if we've not made our way back to the starting position
+; if we have, move back to loop2 if there's more loot positions to add
 goto(if(\
-  {getField({posToString(x(curPos), y(curPos))})} != "S",\
+  {getField({vecToString(curPos)})} != "S",\
   innerLoop2,\
-  if(len(lootPositions) > 0, loop2, end)\
+  if(contains("", lootPositions), end, loop2)\
 ))
+; contains("", lootPositions) is true only when len(lootPositions) == 0
 
 end:
 wait(0.)

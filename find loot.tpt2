@@ -12,8 +12,8 @@
 
 :local string market_data
 
-key.u()
-key.j()
+key.{up}()
+key.{down}()
 
 isopen("arcade")
 
@@ -24,8 +24,11 @@ executesync(if(\
   "{package}:init",\
   "{package}:xNOOPx"\
 ))
-leon.adventure.maxDifficulty +=\
-  if(contains(impulse(), "key.j"), -1, if(contains(impulse(), "key.u"), 1, 0))
+leon.adventure.maxDifficulty = if(\
+  {contains.key({down})}, \
+  leon.adventure.maxDifficulty - 1, \
+  if({contains.key({up})}, leon.adventure.maxDifficulty + 1, leon.adventure.maxDifficulty)\
+)
 gotoif(end, contains(impulse(), "key."))
 
 ; Buy the first market item in our priority list that we don't have.
@@ -36,12 +39,15 @@ gotoif(end, contains(impulse(), "key."))
 ; efficiently. The encoding is length-2 size, length-3 position, and
 ; variable-length data. The size and position are for locating the *next* item.
 #data_table {lua(\
-  local acc = {}\
-  local item_str = "impaler,hammer,bootsPhasing,leechSword,manaReaver,eodArmor,thornsArmor,holyBomb,bookSpells"\
+  local acc = {};\
+  local items = table.pack(\
+    "impaler", "hammer", "bootsPhasing", "leechSword", "manaReaver", \
+    "eodArmor", "thornsArmor", "holyBomb", "bookSpells"\
+  );\
   local i = 3\
-  for item in item_str:gmatch("%a+") do\
-    acc[i] = item\
-    i = i + 3\
+  for j, item in ipairs(items) do\
+	  acc[i] = item;\
+  	i = i + 3\
   end\
   i = 3\
   pos = 0\
@@ -68,9 +74,9 @@ adventure.buyMarketItem(sub(market_data, 5, 99))
 
 ; Turn our room direction into a target exit via lookup-table.
 global.string.set({target_pos_var}, sub(\
-    "0918 0009 1809 0900",\
-    index("U    L    R    D", leon.adventure.room_direction, 0),\
-    4\
+  "0918 0009 1809 0900",\
+  index("U    L    R    D", leon.adventure.room_direction, 0),\
+  4\
 ) . ":")
 
 executesync("{package}:analyze loot")
@@ -80,7 +86,6 @@ executesync("{package}:follow path")
 global.string.set({target_pos_var}, sub({target_positions}, 5, 99999))
 gotoif(loop, len({target_positions}) > 0 && leon.adventure.running)
 
-leon.adventure.path = leon.adventure.room_direction
-executesync("{package}:follow path")
+adventure.move({nextDir(leon.adventure.room_direction)})
 end:
 wait(0.)

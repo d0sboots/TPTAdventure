@@ -5,16 +5,72 @@
 
 :global bool leon.adventure.running
 
-key.k()
+key.{kill}()
 
 isopen("arcade")
 
-#enemyInDir(x, y) adventure.isEnemy(adventure.playerPos() + vec({x},{y}))
-#enemyDirection if({enemyInDir(0., 1.)}, vec(0., 1.),\
-    if({enemyInDir(1., 0.)}, vec(1., 0.),\
-    if({enemyInDir(0., -1.)}, vec(0., -1.),\
-    if({enemyInDir(-1., 0.)}, vec(-1., 0.), vec(0., 0.)))))
-#anyEnemies {enemyInDir(0., 1.)} || {enemyInDir(0., -1.)} || {enemyInDir(1., 0.)} || {enemyInDir(-1., 0.)}
+#enemyCount adventure.countEntities("Enemy")
+#eliteCount adventure.countEntities("Elite")
+
+; Import Editor_actions lib to create editor actions in lua
+:import Editor_actions lib
+{lua(\
+  local playerPos = "adventure.playerPos()";\
+  local function enemyInDir(offset)\
+    --[[Function that checks if a tile has an enemy in relation to the player position]]\
+    local position = editor_math(playerPos, "+", offset);\
+    return editor_adventureIsEnemy(position);\
+  end\
+  \
+  function enemyDirection()\
+    local offset = {};\
+    offset[1] = editor_vec(0.0, 1.0);\
+    offset[2] = editor_vec(1.0, 0.0);\
+    offset[3] = editor_vec(0.0, -1.0);\
+    offset[4] = editor_vec(-1.0, 0.0);\
+    --[[/*\
+        * List of offsets\
+        * Function checks if an enemy is in x direction\
+        * if it is, return the offset, otherwise, check the next offset\
+        * \
+        * returns vec(0.0, 0.0) if no enemies are arround\
+       */]]\
+    local function construct_enemyDirection(index, rest)\
+      if index == 4 then\
+        return rest;\
+      end\
+      index = index + 1;\
+      local direction = offset[index];\
+      local condition = enemyInDir(direction);\
+      local false_case = construct_enemyDirection(index, rest);\
+      return editor_if(condition, direction, false_case);\
+    end\
+    return construct_enemyDirection(0, editor_vec(0.0, 0.0));\
+  end\
+  function anyEnemies()\
+    --[[/*\
+        * Checks if there's any enemies \
+        * in the 4 directions surround the player\
+       */]]\
+    local offset = {};\
+    offset[1] = editor_vec(0.0, 1.0);\
+    offset[2] = editor_vec(0.0, -1.0);\
+    offset[3] = editor_vec(1.0, 0.0);\
+    offset[4] = editor_vec(-1.0, 0.0);\
+    local function construct_anyEnemies(index)\
+      index = index + 1;\
+      if index == 4 then\
+        return enemyInDir(offset[4]);\
+      end\
+      local enemy = enemyInDir(offset[index]);\
+      return editor_math(enemy, "||", construct_anyEnemies(index));\
+    end\
+    return construct_anyEnemies(0);\
+  end\
+)}
+
+#enemyDirection {lua(return enemyDirection())}
+#anyEnemies {lua(return anyEnemies())}
 
 ; Initialize variables so that pressing "k" after resetting AI
 ; toggles leon.adventure.running. We're using plain execute here
@@ -29,7 +85,7 @@ execute(if(\
   "{package}:init",\
   "{package}:xNOOPx"\
 ))
-  goto(if(contains(impulse(), "key."), end, loop))
+goto(if(contains(impulse(), "key."), end, loop))
 
 wait:
 adventure.wait()
@@ -40,16 +96,7 @@ adventure.move({enemyDirection})
 
 loop:
 gotoif(\
-  if(\
-    {anyEnemies},\
-    attack,\
-    if(\
-      max(max(adventure.countEntities("Enemy"), adventure.countEntities("Elite")), adventure.countEntities("Mimic")) > 0,\
-      wait,\
-      end\
-    )\
-  ),\
-  leon.adventure.running\
+  if({anyEnemies}, attack, wait),\
+  leon.adventure.running && 0 < max({enemyCount}, {eliteCount})\
 )
 end:
-wait(0.)

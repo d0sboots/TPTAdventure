@@ -29,7 +29,8 @@ wait:
 adventure.wait()
 
 move:
-stepCount += 1
+stepCount = stepCount + 1
+
 start:
 curPos = adventure.playerPos()
 nextMove = {nextMove}
@@ -49,8 +50,8 @@ goto(if(\
     contains("BW", {nextDirection})\
       || x(curPos) != x(adventure.playerPos())\
       || y(curPos) != y(adventure.playerPos())\
-      || waitChest && adventure.entityType(adventure.playerPos() + nextMove) == "",\
-    (move - 1) - index("W B", {nextDirection}, 0),\
+      || waitChest && contains("", adventure.entityType(adventure.playerPos() + nextMove)),\
+    wait - index("W B", {nextDirection}, 0),\
     move2\
   ),\
   end\

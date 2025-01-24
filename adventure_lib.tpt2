@@ -1,4 +1,16 @@
-#package Adventure v3.3.1
+#package Adventure v3.3.5
+
+; key assignment macros
+#start r
+#reinit i
+; 
+#up u
+#down j
+; 
+#kill k
+
+; Detect which impulse the script was triggered by
+#contains.key(key) contains(impulse(), "key.{key}")
 
 ; The name of the variable that stores "target positions" state.
 ; Doubles as the start of the variable-hiding block.
@@ -8,6 +20,9 @@
 ; Convert a vector that has been pre-split into its two components into
 ; stringified form. This only works for non-negative numbers.
 #posToString(x, y) sub(d2s(({x}) + 200.), 1, 2) . sub(d2s(({y}) + 200.), 1, 2)
+
+; Split a vector into its 2 components to be processed by posToString
+#vecToString(vector) {posToString(x({vector}), y({vector}))}
 
 ; Convert a length-4 stringified vector to vector form.
 ; This evaluates str twice, so that should be a small expression.

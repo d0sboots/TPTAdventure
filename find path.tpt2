@@ -19,57 +19,57 @@ leon.adventure.path = ""
 cantPhase = not(adventure.hasItem("bootsPhasing"))\
 || 0 < max(\
   max(\
-    max(\
-      adventure.countEntities("Chest"),\
-      adventure.countEntities("Enemy")\
-    ),\
-    adventure.countEntities("Elite")\
+    adventure.countEntities("Chest"),\
+    adventure.countEntities("Enemy")\
   ),\
-  adventure.countEntities("Mimic")\
+  adventure.countEntities("Elite")\
 )
-queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
+queue = {vecToString(adventure.playerPos())} . "S:"
+
 loop1:
 curPos = {firstElementPos}
 idx = sub(queue, 0, 4)
 {setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
-queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
-  "",\
-  if(\
-    adventure.isWall(curPos + vec(0., 1.)) && cantPhase\
-      || max(x(curPos), y(curPos)) >= 18.\
-      || x(curPos) < 1.,\
+queue = if(\
+  {getField(idx)} != {firstElementDir},\
+  sub(queue, 6, 99999),\
+  sub(queue, 6, 99999) . if(\
+    adventure.isWall(curPos + vec(0.0, 1.0)) && cantPhase\
+      || max(x(curPos), y(curPos)) >= 18.0\
+      || x(curPos) < 1.0,\
     "",\
-    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
+    {posToString(x(curPos), y(curPos) + 1.0)} . "U:"\
   ) . if(\
-    adventure.isWall(curPos + vec(0., -1.)) && cantPhase\
-      || min(x(curPos), y(curPos)) < 1.\
-      || x(curPos) >= 18.,\
+    adventure.isWall(curPos + vec(0.0, -1.0)) && cantPhase\
+      || min(x(curPos), y(curPos)) < 1.0\
+      || x(curPos) >= 18.0,\
     "",\
-    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
+    {posToString(x(curPos), y(curPos) - 1.0)} . "D:"\
   ) . if(\
-    adventure.isWall(curPos + vec(1., 0.)) && cantPhase\
-      || max(x(curPos), y(curPos)) >= 18.\
-      || y(curPos) < 1.,\
+    adventure.isWall(curPos + vec(1.0, 0.0)) && cantPhase\
+      || max(x(curPos), y(curPos)) >= 18.0\
+      || y(curPos) < 1.0,\
     "",\
-    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
+    {posToString(x(curPos) + 1.0, y(curPos))} . "R:"\
   ) . if(\
-    adventure.isWall(curPos + vec(-1., 0.)) && cantPhase\
-      || min(x(curPos), y(curPos)) < 1.\
-      || y(curPos) >= 18.,\
+    adventure.isWall(curPos + vec(-1.0, 0.0)) && cantPhase\
+      || min(x(curPos), y(curPos)) < 1.0\
+      || y(curPos) >= 18.0,\
     "",\
-    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
+    {posToString(x(curPos) - 1.0, y(curPos))} . "L:"\
   )\
 )
 goto(if(\
-  queue == "" || contains(idx, sub({target_positions}, 0, 4)),\
+  contains("", queue) || contains(idx, sub({target_positions}, 0, 4)),\
   l2start,\
   loop1\
 ))
 
 loop2:
 leon.adventure.path = dir . leon.adventure.path
-curPos -= {nextDir(dir)}
-idx = {posToString(x(curPos), y(curPos))}
+curPos = curPos - {nextDir(dir)}
+idx = {vecToString(curPos)}
+
 l2start:
 dir = {getField(idx)}
 gotoif(loop2, dir != "S")
