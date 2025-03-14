@@ -3,7 +3,6 @@
 
 :budget_cap max
 
-:global bool leon.adventure.running
 :global string leon.adventure.path
 
 :local int stepCount
@@ -13,13 +12,10 @@
 
 #nextDirection sub(leon.adventure.path, stepCount, 1)
 #nextMove {nextDir({nextDirection})}
+#nextTile adventure.entityType(adventure.playerPos() + nextMove)
 #curEntity adventure.entityType(curPos + {nextDir({nextDirection})})
 
-goto(if(\
-  isopen("arcade") && leon.adventure.running,\
-  start,\
-  end\
-))
+goto(if(isopen("arcade") && {state.get}, start, end))
 
 bomb:
 adventure.placeBomb()
@@ -34,28 +30,27 @@ stepCount = stepCount + 1
 start:
 curPos = adventure.playerPos()
 nextMove = {nextMove}
-waitChest = contains(adventure.entityType(adventure.playerPos() + nextMove), "Chest")
+waitChest = contains({nextTile}, "Chest")
 
 move2:
 waitframe()
 adventure.move(nextMove)  ; This is a no-op for invalid (0,0) moves
 
 loop:
-; This uses the spacing of unused values in the index expression to be equivalent
-; to lines to skip *backward*. This is much cheaper than having a nested ternary.
-; index returns -1 for the fallthrough case. (UDLR -> move)
-goto(if(\
-  stepCount < len(leon.adventure.path) && leon.adventure.running && isopen("arcade"),\
+; This uses the spacing of unused values in the index expression to be
+; equivalent to lines to skip *backward*. This is much cheaper than having
+; a nested ternary.
+; index returns -1 for the fallthrough case, making UDLR place us at move
+
+gotoif(\
   if(\
     contains("BW", {nextDirection})\
       || x(curPos) != x(adventure.playerPos())\
       || y(curPos) != y(adventure.playerPos())\
-      || waitChest && contains("", adventure.entityType(adventure.playerPos() + nextMove)),\
+      || waitChest && contains("", {nextTile}),\
     wait - index("W B", {nextDirection}, 0),\
     move2\
   ),\
-  end\
-))
-
+  stepCount < len(leon.adventure.path) && {state.get} && isopen("arcade")\
+)
 end:
-wait(0.)

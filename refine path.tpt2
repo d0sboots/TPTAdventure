@@ -15,20 +15,20 @@
 #escapeDirection if(\
   adventure.entityType(curPos + vec(0., 1.)) == ""\
     && adventure.entityType(curPos + vec(0., 2.)) == ""\
-    && false == adventure.isWall(curPos + vec(0., 1.))\
-    && y(curPos) < 17.,\
+    && not(adventure.isWall(curPos + vec(0., 1.)))\
+    && y(curPos) < 17.0,\
   "BUUWDD",\
   if(\
     adventure.entityType(curPos + vec(0., -1.)) == ""\
       && adventure.entityType(curPos + vec(0., -2.)) == ""\
-      && false == adventure.isWall(curPos + vec(0., -1.))\
-      && y(curPos) > 1.,\
+      && not(adventure.isWall(curPos + vec(0., -1.)))\
+      && y(curPos) > 1.0,\
     "BDDWUU",\
     if(\
       adventure.entityType(curPos + vec(-1., 0.)) == ""\
         && adventure.entityType(curPos + vec(-2., 0.)) == ""\
-        && false == adventure.isWall(curPos + vec(-1., 0.))\
-        && x(curPos) > 1.,\
+        && not(adventure.isWall(curPos + vec(-1., 0.)))\
+        && x(curPos) > 1.0,\
       "BLLWRR",\
       "BRRWLL"\
     )\
@@ -44,20 +44,20 @@ leon.adventure.path = {insert(\
   stepCount,\
   if(adventure.hasItem("eodArmor"), "BWWW", {escapeDirection})\
 )}
-stepCount = stepCount + if(adventure.hasItem("eodArmor"), 4, 6)
+stepCount += if(adventure.hasItem("eodArmor"), 4, 6)
 
 nextTile:
 curPos = curPos + {nextDir({curDirection})}
 stepCount = stepCount + 1
 
+#move_dir adventure.entityType(curPos + {nextDir({curDirection})})
 start:
-goto(if(\
-  stepCount >= len(leon.adventure.path),\
-  end,\
+gotoif(\
   if(\
-    adventure.entityType(curPos + {nextDir({curDirection})}) != "Rock" || {has_hammer},\
+    {move_dir} != "Rock" || {has_hammer},\
     nextTile,\
     rock\
-  )\
-))
+  ),\
+  stepCount < len(leon.adventure.path)\
+)
 end:

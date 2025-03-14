@@ -1,4 +1,4 @@
-#package Adventure v3.3.5
+#package Adventure v3.3.6
 
 ; key assignment macros
 #start r
@@ -9,25 +9,56 @@
 ; 
 #kill k
 
+; 
+; a string holding our direction sequence
+#dir_list "ULRD"
+
+; macro that returns a spaced out version of our dir_list
+; requires the ammount of spaces, a negative input
+; returns spaces before the direction
+; 01 => "R "
+; -1 => " R"
+#dir_spaced(space) {lua(\
+  local directions = {};\
+  local space = {space} < 0 and {space} - 1 or {space} + 1;\
+  local spacer = string.format("%%%ss", 0 - space);\
+  --[[string.format("%%%ss", 2) = %2s]]\
+  for i = 1, #{dir_list} do\
+    directions[i] = spacer:format(string.sub({dir_list}, i, i));\
+  end\
+  return table.concat(directions);\
+)}
+
 ; Detect which impulse the script was triggered by
 #contains.key(key) contains(impulse(), "key.{key}")
 
 ; The name of the variable that stores "target positions" state.
 ; Doubles as the start of the variable-hiding block.
-#target_pos_var "<size=0>adv.target_pos"
-#target_positions global.string.get({target_pos_var})
+:const string target_pos_var "<size=0>adv.target_pos"
+#target.getPositions global.string.get(target_pos_var)
+#target.setPos(position) global.string.set(target_pos_var, {position})
 
+; The state of the script.
+:const string state "leon.adventure.running"
+#state.get global.bool.get(state)
+#state.set(value) global.bool.set(state, {value})
+
+; Convert a coordinate into stringified form.
+#coordToString(coord) sub(d2s(200.0 + ({coord})), 1, 2)
 ; Convert a vector that has been pre-split into its two components into
 ; stringified form. This only works for non-negative numbers.
-#posToString(x, y) sub(d2s(({x}) + 200.), 1, 2) . sub(d2s(({y}) + 200.), 1, 2)
+#posToString(x, y) {coordToString({x})} . {coordToString({y})}
 
 ; Split a vector into its 2 components to be processed by posToString
 #vecToString(vector) {posToString(x({vector}), y({vector}))}
 
+; Convert a string to a coordinate.
+#strToCoord(str, offset) s2d(sub({str}, {offset}, 2), -1.0)
+
 ; Convert a length-4 stringified vector to vector form.
 ; This evaluates str twice, so that should be a small expression.
 ; This *will* work with negative values, if they're small enough.
-#strToVec(str) vec(s2d(sub({str}, 0, 2), -1.), s2d(sub({str}, 2, 2), -1.))
+#strToVec(str) vec({strToCoord({str}, 0)}, {strToCoord({str}, 2)})
 
 ; Macros for working with BFS queues. The queue is structured as a
 ; length-4 stringified position followed by a length-1 direction.
@@ -56,15 +87,21 @@
 ; comparing against maxDifficulty, which technically doesn't affect your
 ; ability to survive, but does determine how the AI chooses rooms.
 #survivable(difficulty) (\
-  ceil(i2d(adventure.playerAttack()) * if(adventure.hasItem("impaler"), 1.1, 1.)) >=\
-    round({difficulty} * 0.38 + 1.) + round({difficulty} * 0.08)\
-    || i2d(adventure.playerArmor()) >= ceil({difficulty} * 0.39)\
-) && i2d(leon.adventure.maxDifficulty) >= {difficulty}\
-  && (adventure.hasItem("lantern") || {difficulty} < 100.)
+  {difficulty} < 100.0 || \
+  adventure.hasItem("lantern")\
+) && leon.adventure.maxDifficulty >= {difficulty} && (\
+  i2d(adventure.playerArmor()) >= ceil({difficulty} * 0.39) || if(\
+    adventure.hasItem("impaler"), \
+    ceil(i2d(adventure.playerAttack()) * 1.1),\
+    i2d(adventure.playerAttack())\
+  ) >= round({difficulty} * 0.38 + 1.) + round({difficulty} * 0.08)\
+)
+
 
 ; Convert a U/D/R/L direction into a direction vector by using index
 ; and lookup tables. These are arranged so that if the lookup fails
-; (i.e. if the direction is "W" for wait), the s2d will default to (0.,0.).
+; (i.e. if the direction is "W" for wait),
+; the s2d will default to (0.,0.).
 #nextX(d) s2d(sub("X 0 0 1-1", index(" U D R L", {d}, 0), 2), 0.)
 #nextY(d) s2d(sub("X 1-1 0 0", index(" U D R L", {d}, 0), 2), 0.)
 #nextDir(d) vec({nextX({d})}, {nextY({d})})

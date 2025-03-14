@@ -11,22 +11,24 @@
 
 #setField(index, value) lss("_f" . {index}, {value})
 #getField(index) lsg("_f" . {index})
+; 
 #setTPos(index, value) lss("_t" . {index}, {value})
 #getTPos(index) lsg("_t" . {index})
 
 queue = {vecToString(adventure.playerPos())} . "S:"
 
 ; On the first entry of this loop, the junk entry "_f" will be set to "S".
-; This has no effect.
-; In general, lootPositions, queue and setField are protected so that if the field
-; has already been set, we won't take action again.
+; This has no effect. In general, lootPositions, queue and setField are
+; protected so that if the field has already been set,
+; we won't take action again.
 loop1:
 curPos = {firstElementPos}
 idx = sub(queue, 0, 4)
 
 ; Add a position if it's not been processed and if it has a chest in it
 lootPositions = if(\
-  {getField(idx)} == "" && contains(adventure.entityType(curPos), "Chest"),\
+  contains("", {getField(idx)}) && \
+  contains(adventure.entityType(curPos), "Chest"),\
   {vecToString(curPos)} . ":" . lootPositions,\
   lootPositions\
 )
@@ -63,19 +65,28 @@ queue = if(\
 gotoif(loop1, contains(queue, ":"))
 
 continue:
-lootPositions = {target_positions} . lootPositions
+lootPositions = {target.getPositions} . lootPositions
 ; add the loot positions to our target positions
 
 loop2:
-targetPos = sub(lootPositions, 0, 4) ; get the next loot position
-curPos = {strToVec(targetPos)} ; set our curPos to our position
-lootPositions = sub(lootPositions, 5, 99999) ; pop the previous loot position
+targetPos = sub(lootPositions, 0, 4)
+; get the next loot position
+
+curPos = {strToVec(targetPos)}
+; set our curPos to our position
+
+lootPositions = sub(lootPositions, 5, 99999)
+; pop the previous loot position
 
 innerLoop2:
-idx = {vecToString(curPos)} ; stringify our curPos to access our fields
+idx = {vecToString(curPos)}
+; stringify our curPos to access our fields
 
-; you could do contains(getField(vecToString(curPos - nextDir(getField(idx))))) here
-; but I don't know if the extra block count is worth it
+; you could do
+; contains(
+;   "S",
+;   getField(vecToString(curPos - nextDir(getField(idx))))
+; ) here but I don't know if the extra block count is worth it
 ; 
 ; lsg = 1
 ; concat = 2
@@ -100,32 +111,45 @@ idx = {vecToString(curPos)} ; stringify our curPos to access our fields
 ; make our loot position the head if it can be accessed by our start and
 ; it hasn't already been added to the target_positions
 ; 
-; otherwise, don't insert if the target position hasn't been recorded yet or
-; if it has already been inserted in our target_positions
+; otherwise, don't insert if the target position hasn't been recorded yet
+; or if it has already been inserted in our target_positions
 ; 
 ; otherwise, insert a step to reach our loot position?
-global.string.set({target_pos_var}, if(\
-  "S" == {getField({vecToString(curPos - {nextDir({getField(idx)})})})} \
-    && not(contains({target_positions}, targetPos)),\
-  targetPos . ":" . {target_positions},\
+#next_vector curPos - {nextDir({getField(idx)})}
+{target.setPos(if(\
+  contains("S", {getField({vecToString({next_vector})})}) && \
+  not(contains({target.getPositions}, targetPos)),\
+  targetPos . ":" . {target.getPositions},\
   if(\
-    contains({target_positions}, targetPos) || contains("", {getTPos(idx)}),\
-    {target_positions},\
-    sub({target_positions}, 0, index({target_positions}, {getTPos(idx)}, 0))\
-      . targetPos . ":" \
-      . sub({target_positions}, index({target_positions}, {getTPos(idx)}, 0), 99999)\
+    contains("", {getTPos(idx)}) || \
+    contains({target.getPositions}, targetPos),\
+    {target.getPositions},\
+    sub(\
+      {target.getPositions},\
+      0,\
+      index({target.getPositions}, {getTPos(idx)}, 0)\
+    ) . targetPos . ":" . sub(\
+      {target.getPositions},\
+      index({target.getPositions}, {getTPos(idx)}, 0),\
+      9999\
+    )\
   )\
-))
+))}
 
 ; set a target position if it hasn't been added to the target_positions
-; or overwrite the target position if its contents is with target positions?
+; or overwrite the target position if its contents
+; is with target positions?
 {setTPos(\
   idx,\
   if(\
-    not(contains({target_positions}, targetPos)) || contains(\
+    contains(\
       {getTPos(idx)}, \
-      sub({target_positions}, index({target_positions}, targetPos, 0) + 5, 4)\
-    ),\
+      sub(\
+        {target.getPositions}, \
+        index({target.getPositions}, targetPos, 0) + 5, \
+        4\
+      )\
+    ) || not(contains({target.getPositions}, targetPos)),\
     targetPos,\
     {getTPos(idx)}\
   )\
@@ -134,16 +158,19 @@ global.string.set({target_pos_var}, if(\
 ; Update our curPos to the next tile
 ; 
 ; We're actually working backwards, from the desired loot position back to
-; our starting position, so this "next tile" is a tile closer to the player
-curPos = curPos - {nextDir({getField(idx)})}
-; return to the innerLoop2 if we've not made our way back to the starting position
-; if we have, move back to loop2 if there's more loot positions to add
+; our starting position, so this "next tile" is a
+; tile closer to the player
+; 
+
+curPos -= {nextDir({getField(idx)})}
+; return to the innerLoop2 if we've not made
+; our way back to the starting position if we have,
+; move back to loop2 if there's more loot positions to add
 goto(if(\
-  {getField({vecToString(curPos)})} != "S",\
-  innerLoop2,\
-  if(contains("", lootPositions), end, loop2)\
+  contains("S", {getField({vecToString(curPos)})}),\
+  if(contains("", lootPositions), end, loop2),\
+  innerLoop2\
 ))
 ; contains("", lootPositions) is true only when len(lootPositions) == 0
 
 end:
-wait(0.)

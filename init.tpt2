@@ -1,32 +1,51 @@
 :import adventure_lib
 :name {package}:init
 
-:budget_cap 1
+:budget_cap 201
+; minimum budget cap so that init can quit in 1 frame
 
 :const string hide_block "adv---Stop hiding---"
 #hide_blocker global.string.get(hide_block)
 
-:global int leon.adventure.maxDifficulty
-:global bool leon.adventure.running
+:global double leon.adventure.maxDifficulty
 :global string leon.adventure.path
-:global string leon.adventure.room_direction
 
-:local int maxDifficultyInit
+:local double maxDifficultyInit
 :local double difficulty
+; 
+:local string market_data
+:local string dir
+; 
+:local bool parity
+:local bool needs_something
+:local bool skipped
 
-key.{start}()
 key.{reinit}()
+; reinitialize maxDifficulty
+; 
+key.{start}()
+; Toggle the script state
+; 
+key.{up}()
+key.{down}()
+; Increment/Decrement maxDifficulty by 1
+; 
+key.{kill}()
+; Kill all enemies and shut down the script after
 
 isopen("arcade")
 
 #nextRoomLower if(\
-  x(adventure.roomCoords()) < 127.0 && y(adventure.roomCoords()) >= 127.0,\
+  x(adventure.roomCoords()) < 127.0 && \
+  y(adventure.roomCoords()) >= 127.0,\
   "R",\
   if(\
-    x(adventure.roomCoords()) >= 127.0 && y(adventure.roomCoords()) > 127.0,\
+    x(adventure.roomCoords()) >= 127.0 && \
+    y(adventure.roomCoords()) > 127.0,\
     "D",\
     if(\
-      x(adventure.roomCoords()) > 127.0 && y(adventure.roomCoords()) <= 127.0,\
+      x(adventure.roomCoords()) > 127.0 && \
+      y(adventure.roomCoords()) <= 127.0,\
       "L",\
       "U" \
     )\
@@ -35,103 +54,263 @@ isopen("arcade")
 #rotateLeft(x) sub("LDRU", index("ULDR", {x}, 0), 1)
 ; Conditionally rotate the direction "x" to the left.
 ; The benefit of this macro is that it only expands "x" once.
-#condRotateLeft(cond, x) sub(if({cond}, "LDRU", "ULDR"), index("ULDR", {x}, 0), 1)
+#condRotateLeft(cond, x) sub(\
+  if({cond}, "LDRU", "ULDR"), \
+  index("ULDR", {x}, 0), \
+  1\
+)
 
 ; ======== Start init code ==============
 
-; This exists as a local variable solely to provide users an easy place to
-; customize it, after it's been imported.
-maxDifficultyInit = 81
+; This exists as a local variable solely to provide users
+; an easy place to customize it, after it's been imported.
+maxDifficultyInit = 81.0
 
 ; Initialize all our global variables.
-; This is a maze of conditional expressions, because init is called from
-; *every* script that has a key impulse, in order to handle proper variable
-; initialization first.
+; This is called by farm_keys when key.{kill} is pressed
+; 
+; This call is in charge of propperly initializing all global variables
+; 
 
 ; Check the variable hider to see if this is first execution or not.
 leon.adventure.maxDifficulty = if(\
   contains("", {hide_blocker}) || {contains.key({reinit})},\
   maxDifficultyInit,\
-  leon.adventure.maxDifficulty\
+  if(\
+    contains("key.{start}|key.{kill}", impulse()),\
+    leon.adventure.maxDifficulty,\
+    if(\
+      {contains.key({up})}, \
+      leon.adventure.maxDifficulty + 1.0,\
+      leon.adventure.maxDifficulty - 1.0\
+    )\
+  )\
 )
 ; This variable also begins the variable hiding block with its name.
-global.string.set({target_pos_var}, {target_positions})
+{target.setPos({target.getPositions})}
 
-; If we are triggered by key.r or key.k (from the kill enemies script), then
-; we should toggle the running state. This expression toggles the state when
-; the second part is true, and keeps it constant when the second part is false.
-leon.adventure.running = leon.adventure.running !=\
-    contains("key.{start}|{package}:kill enemies", impulse())
+; These are the impulse keys that don't mean key.{kill}
+:const string non_kill "key.{start}key.{up}key.{down}key.{reinit}"
+; 
+; Change the state of the script.
+; If we use key.{kill}, our state must be off, otherwise, we
+; try to toggle our state.
+{state.set(\
+  contains(impulse(), non_kill) && \
+  {state.get} != {contains.key({start})}\
+)}
+
 leon.adventure.path = leon.adventure.path
-leon.adventure.room_direction = leon.adventure.room_direction
 global.string.set(hide_block, "</size>")
 
-; If we are invoked from "kill enemies," it means we are using that script stand-alone.
-; We will execute the last executesync of the loop below, just to re-exec the
-; kill-enemies script. This is done to keep all the init and turbo start/stop logic
-; centralized here, in init.
-; In general, "contains" checks are more size/speed efficient than "==" checks
-; for strings, since they have one fewer argument.
 goto(if(\
-  contains(impulse(), "kill enemies"),\
-  last_exec,\
-  if({contains.key({start})} && leon.adventure.running, loop, end)\
+  {contains.key({start})} && {state.get}, \
+  start, \
+  if({contains.key({kill})}, killer_loop, end)\
 ))
 
 ; ======== Continuous loop code ==============
 
-loop:
-executesync("{package}:farm keys")
+#can_leech adventure.hasItem("leechSword")
+#can_cast adventure.hasItem("bookSpells")
+#has_reaver adventure.hasItem("manaReaver")
 
-; We check based on current difficulty plus 1, because it's more efficient
-; that way.
+#needs_bombs adventure.bombs() < 99 && difficulty >= 80.0 && {can_leech}
+#needs_health adventure.playerHealth() < 99 && {can_leech}
+#needs_mana adventure.mana() < 99 && {has_reaver} && {can_cast}
+#needs_keys adventure.keys() <= 10
+
+#any_needs {needs_bombs} || {needs_health} || {needs_mana} || {needs_keys}
+
+#num_enemies round(difficulty * 0.1 + 3.0)
+
+; calculate how much health an elite has
+#elite_health d2i(floor(difficulty * 0.01 + 1.0))
+; calculate how much damage an elite deals
+#elite_dmg d2i(ceil(ceil(difficulty * 0.39) * 1.5))
+; calculate how much damage an elite will actually deal to us
+#elite_trueDMG {elite_health} * ({elite_dmg} - adventure.playerArmor())
+
+next:
+; partity is in charge of making sure we never exit farm keys until
+; we're back in the room we started in
+parity = not(parity)
+leon.adventure.path = dir
+executesync("{package}:follow path")
+
+start:
+difficulty = {cur_difficulty(0.0)}
+needs_something = {survivable(difficulty)} && ({any_needs})
+; "U    L    R    D" = "{dir_spaced(4)}"
+; "XU   L   R   D"   = "X{dir_spaced(3)}"
+; " 918 09  189 09"
+:const string exit_coord " 918 09  189 09"
+#exit_concat x(adventure.playerPos()) . y(adventure.playerPos())
+dir = sub("X{dir_spaced(3)}", index(exit_coord, {exit_concat}, 0), 1)
+; get our exit direction
+
+skipped = contains("UDLR", dir) && (\
+  (adventure.countEntities("Elite") > 0) != \
+  (needs_something && {needs_bombs}) && (\
+    adventure.countEntities("Elite") > 0 || \
+    adventure.playerHealth() > 100 - d2i({num_enemies} * 1.8)\
+  ) || (\
+    adventure.countEntities("Elite") > 0 && \
+    adventure.playerHealth() <= {elite_trueDMG}\
+  ) || (parity && not(needs_something))\
+)
+
+goto(if(skipped, next, killer_loop))
+
+; Start of kill enemies
+
+#enemyInDir(x, y) adventure.isEnemy(adventure.playerPos() + vec({x},{y}))
+; Check if an enemy is in the inputed direction
+
+; Move in the enemies direction
+#enemyDirection if({enemyInDir(0.0, 1.0)}, vec(0.0, 1.0),\
+                if({enemyInDir(1.0, 0.0)}, vec(1.0, 0.0),\
+                if({enemyInDir(0.0,-1.0)}, vec(0.0,-1.0),\
+                if({enemyInDir(-1.0, 0.0)}, vec(-1.0, 0.0), \
+                vec(0.0, 0.0)))))
+
+; check if there are any enemies next to the player
+#anyEnemies {enemyInDir(0.0, 1.0)} || {enemyInDir( 0.0,-1.0)} ||\
+            {enemyInDir(1.0, 0.0)} || {enemyInDir(-1.0, 0.0)}
+
+#count.entities(entity) adventure.countEntities("{entity}")
+; helper macro to shorten the process for counting entities
+
+killer_wait:
+adventure.wait()
+; wait in our curent position
+
+attack:
+waitframe()
+adventure.move({enemyDirection})
+; move towards the enemy to attack it
+; wait frame is needed here to handle invalid (0, 0) movements
+
+killer_loop:
+gotoif(\
+  if(\
+    max({count.entities(Enemy)}, {count.entities(Elite)}) > 0,\
+    if({anyEnemies}, attack, killer_wait),\
+    if({contains.key({kill})}, end, next)\
+  ),\
+  {contains.key({kill})} || (\
+    contains({dir_list}, dir) && {state.get} && \
+    (needs_something && ({any_needs}) || parity || skipped)\
+  )\
+)
+
+main_loop:
+; We check based on current difficulty plus 1,
+; because it's more efficient that way.
 difficulty = {cur_difficulty(1.0)}
 
 ; This line is responsible for maxDifficulty "creeping" upwards. When used
-; properly, it will cause the AI to slowly make spirals that cover (nearly)
-; the entire maze. However, extra lines can "trick" it and cause it to jump
-; more difficulty levels than wanted.
+; properly, it will cause the AI to slowly make spirals that cover
+; (nearly) the entire maze. However, extra lines can "trick" it and
+; cause it to jump more difficulty levels than wanted.
 ;
-; Note the check against current difficulty (which is current_difficulty+1 here),
-; which prevents this from triggering multiple times before the AI can travel
-; to new rooms.
+; Note the check against current difficulty
+; (which is current_difficulty + 1 here), which prevents this from
+; triggering multiple times before the AI can travel to new rooms.
 ;
 ; We add 2 to maxDifficulty because adding 1 would cause us to overlap
 ; prior progress, and we'd immediately add another 1 anyway.
 leon.adventure.maxDifficulty = if(\
-  difficulty > i2d(leon.adventure.maxDifficulty) \
-    && adventure.isCompleted(adventure.roomCoords()),\
-  leon.adventure.maxDifficulty + 2,\
+  difficulty > leon.adventure.maxDifficulty \
+    && {count.entities(Chest)} == 0,\
+  leon.adventure.maxDifficulty + 2.0,\
   leon.adventure.maxDifficulty\
 )
 
 ; using contains here saves 1 block, but you might not like it
-leon.adventure.room_direction = if(\
-  difficulty == 1.0 || contains("", leon.adventure.room_direction),\
+dir = if(\
+  difficulty != 1.0 || contains("", dir),\
   {condRotateLeft({survivable(difficulty)}, {nextRoomLower})},\
-  {rotateLeft(leon.adventure.room_direction)}\
+  {rotateLeft(dir)}\
 )
 
-last_exec:
-; We might be here to invoke "kill enemies", which happens iff we ourselves were
-; invoked by "kill enemies." Otherwise, we need to protect against arcade being closed,
-; because executesync will stall forever in that case due to the script condition.
-; This also prevents spurious moves in case we've cancelled the script.
-executesync(if(\
-  contains(impulse(), "kill enemies"),\
-  "{package}:kill enemies",\
-  if(\
-    isopen("arcade") && leon.adventure.running,\
-    "{package}:find loot",\
-    "{package}:xNOOPx"\
-  )\
+; Buy the first market item in our priority list that we don't have.
+; We don't need to worry about checking for the market or
+; available emeralds if we can't buy the item, we'll simply fail
+; to purchase and continue on.
+
+; This Lua macro constructs a data table that is used to iterate over
+; the items efficiently. The encoding is length-2 size, length-3 position,
+; and variable-length data. The size and position are for locating the
+; *next* item.
+#data_table {lua(\
+  local acc = {};\
+  local items = table.pack(\
+    "impaler", "hammer", "bootsPhasing", "leechSword", "manaReaver", \
+    "eodArmor", "thornsArmor", "holyBomb", "bookSpells"\
+  );\
+  local i = 3\
+  for item = 1, #items do\
+    acc[i] = items[item];\
+    i = i + 3;\
+  end\
+  local pos = 0;\
+  for j = 3, i-3, 3 do\
+    pos = pos + 5 + #acc[j];\
+    acc[j - 2] = string.format("%02d", 5 + #(acc[j + 3] or ""));\
+    acc[j - 1] = string.format("%03d", pos);\
+  end\
+  return table.concat(acc)\
+)}
+
+market_loop:
+market_data = sub(\
+  "{data_table}",\
+  s2i(sub(market_data, 2, 3), 0),\
+  s2i(sub(market_data, 0, 2), 12)\
+)
+; Loop until we find an unbought item. By the nature of hasItem, it will
+; always return false for the empty string at the end of the loop, so we
+; don't need an explicit end check.
+goto(if(\
+  isopen("arcade") && {state.get},\
+  if(adventure.hasItem(sub(market_data, 5, 99)), market_loop, buy),\
+  end\
 ))
-gotoif(loop, isopen("arcade") && leon.adventure.running && not(contains(impulse(), "kill enemies")))
+
+buy:
+adventure.buyMarketItem(sub(market_data, 5, 99))
+
+; Turn our room direction into a target exit via lookup-table.
+; "U    L    R    D    " = "{dir_spaced(4)}"
+; "0918 0009 1809 0900"
+:const string exit_idx "0918 0009 1809 0900"
+{target.setPos(sub(exit_idx, index("{dir_spaced(4)}", dir, 0), 4) . ":")}
+
+executesync("{package}:analyze loot")
+find_loot:
+executesync("{package}:find path")
+executesync("{package}:follow path")
+{target.setPos(sub({target.getPositions}, 5, 9999))}
+
+; since every target position ends with `:`,
+; len({target.getPositions}) > 0 returns true
+; when our targetPositions has the string `:`
+gotoif(find_loot, {state.get} && contains({target.getPositions}, ":"))
+
+leon.adventure.path = dir
+executesync("{package}:follow path")
+
+; we loop as long as arcade is open and we're not shut down
+gotoif(start, isopen("arcade") && {state.get})
 
 end:
-; If we were invoked by a manual action (key.r or kill enemies), we shut down
-; automatically once we reach the end of the script. This might be redundant, but
-; in some cases (such as exiting due to leaving the arcade) it is needed.
-; In any other situation, the running state should be unmodified.
-leon.adventure.running = leon.adventure.running &&\
-  not(contains("key.{start}|{package}:kill enemies", impulse()))
+; We reach the end 
+
+; Our state is controlled by the top of the script, so we can
+; only reach here if {state.get} == false or if arcade is closed.
+; 
+; If our state == false, we won't change anything,
+; as we're already shut down but if arcade is closed,
+; we must ensure that we shut down
+{state.set(isopen("arcade") && {state.get})}
