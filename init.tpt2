@@ -14,6 +14,7 @@
 :local double difficulty
 ; 
 :local string market_data
+:local string farm_dir
 :local string dir
 ; 
 :local bool parity
@@ -96,7 +97,7 @@ leon.adventure.maxDifficulty = if(\
 ; If we use key.{kill}, our state must be off, otherwise, we
 ; try to toggle our state.
 {state.set(\
-  contains(impulse(), non_kill) && \
+  contains(non_kill, impulse()) && \
   {state.get} != {contains.key({start})}\
 )}
 
@@ -135,7 +136,7 @@ next:
 ; partity is in charge of making sure we never exit farm keys until
 ; we're back in the room we started in
 parity = not(parity)
-leon.adventure.path = dir
+leon.adventure.path = farm_dir
 executesync("{package}:follow path")
 
 start:
@@ -146,10 +147,10 @@ needs_something = {survivable(difficulty)} && ({any_needs})
 ; " 918 09  189 09"
 :const string exit_coord " 918 09  189 09"
 #exit_concat x(adventure.playerPos()) . y(adventure.playerPos())
-dir = sub("X{dir_spaced(3)}", index(exit_coord, {exit_concat}, 0), 1)
+farm_dir = sub("X{dir_spaced(3)}", index(exit_coord, {exit_concat}, 0), 1)
 ; get our exit direction
 
-skipped = contains("UDLR", dir) && (\
+skipped = contains("UDLR", farm_dir) && (\
   (adventure.countEntities("Elite") > 0) != \
   (needs_something && {needs_bombs}) && (\
     adventure.countEntities("Elite") > 0 || \
@@ -192,17 +193,24 @@ adventure.move({enemyDirection})
 ; wait frame is needed here to handle invalid (0, 0) movements
 
 killer_loop:
-gotoif(\
+goto(if(\
+  {state.get} || {contains.key({kill})},\
   if(\
     max({count.entities(Enemy)}, {count.entities(Elite)}) > 0,\
     if({anyEnemies}, attack, killer_wait),\
-    if({contains.key({kill})}, end, next)\
+    if(\
+      {contains.key({kill})}, \
+      end,\
+      if(\
+        contains({dir_list}, farm_dir) && \
+          (needs_something && ({any_needs}) || parity || skipped),\
+        next,\
+        main_loop\
+      )\
+    )\
   ),\
-  {contains.key({kill})} || (\
-    contains({dir_list}, dir) && {state.get} && \
-    (needs_something && ({any_needs}) || parity || skipped)\
-  )\
-)
+  end\
+))
 
 main_loop:
 ; We check based on current difficulty plus 1,

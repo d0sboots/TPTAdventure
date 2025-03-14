@@ -1,4 +1,4 @@
-#package Adventure v3.3.6
+#package Adventure v3.3.7
 
 ; key assignment macros
 #start r
@@ -8,6 +8,17 @@
 #down j
 ; 
 #kill k
+
+; lua macro that makes sure the export code doesn't have
+; duplicate impulse keys.
+{lua(\
+  local imp = {};\
+  local keys = "{start}|{reinit}|{up}|{down}|{kill}|";\
+  for word in keys:gmatch("[^|]+") do\
+    if imp[word] then error("key. impulses can't have duplicates", 0) end\
+    imp[word] = 1;\
+  end\
+)}
 
 ; 
 ; a string holding our direction sequence

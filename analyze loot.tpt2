@@ -139,21 +139,18 @@ idx = {vecToString(curPos)}
 ; set a target position if it hasn't been added to the target_positions
 ; or overwrite the target position if its contents
 ; is with target positions?
-{setTPos(\
-  idx,\
-  if(\
-    contains(\
-      {getTPos(idx)}, \
-      sub(\
-        {target.getPositions}, \
-        index({target.getPositions}, targetPos, 0) + 5, \
-        4\
-      )\
-    ) || not(contains({target.getPositions}, targetPos)),\
-    targetPos,\
-    {getTPos(idx)}\
-  )\
-)}
+{setTPos(idx, if(\
+  contains(\
+    {getTPos(idx)}, \
+    sub(\
+      {target.getPositions}, \
+      index({target.getPositions}, targetPos, 0) + 5, \
+      4\
+    )\
+  ) || not(contains({target.getPositions}, targetPos)),\
+  targetPos,\
+  {getTPos(idx)}\
+))}
 
 ; Update our curPos to the next tile
 ; 
