@@ -27,8 +27,8 @@ idx = sub(queue, 0, 4)
 
 ; Add a position if it's not been processed and if it has a chest in it
 lootPositions = if(\
-  contains("", {getField(idx)}) && \
-  contains(adventure.entityType(curPos), "Chest"),\
+  {getField(idx)} == "" && \
+  adventure.entityType(curPos) == "Chest",\
   {vecToString(curPos)} . ":" . lootPositions,\
   lootPositions\
 )
@@ -62,7 +62,7 @@ queue = if(\
 ; Every position is ended with `:` so we should
 ; repeat the loop until queue no longer has the character `:`
 ; i.e until we've added a field for every tile in the room
-gotoif(loop1, contains(queue, ":"))
+gotoif(loop1, queue != "")
 
 continue:
 lootPositions = {target.getPositions} . lootPositions
@@ -82,29 +82,6 @@ innerLoop2:
 idx = {vecToString(curPos)}
 ; stringify our curPos to access our fields
 
-; you could do
-; contains(
-;   "S",
-;   getField(vecToString(curPos - nextDir(getField(idx))))
-; ) here but I don't know if the extra block count is worth it
-; 
-; lsg = 1
-; concat = 2
-; sub = 3
-; d2s = 2
-; posToString = concat + sub + d2s + sub + d2s = 12
-; a.d = 3
-; x = 1
-; index = 3
-; nextX = nextY = s2d + sub + index = 8
-; getField = lsg + concat = 3
-; comparison.string = 3
-; 3 + 12 + 3 + 1 + 8 + 3 + 1 + 8 + 3 = 42
-; 
-; vecToString = x + y + posToString = 1 + 1 + 12 = 14
-; a.v = a.d = 3
-; nextDir = vec + nextX + nextY = 18
-; 3 + 14 + 3 + 18 = 38
 
 ; insert our loot positions into our target_positions
 ; 
@@ -117,11 +94,11 @@ idx = {vecToString(curPos)}
 ; otherwise, insert a step to reach our loot position?
 #next_vector curPos - {nextDir({getField(idx)})}
 {target.setPos(if(\
-  contains("S", {getField({vecToString({next_vector})})}) && \
+  {getField({vecToString({next_vector})})} == "S" && \
   not(contains({target.getPositions}, targetPos)),\
   targetPos . ":" . {target.getPositions},\
   if(\
-    contains("", {getTPos(idx)}) || \
+    {getTPos(idx)} == "" || \
     contains({target.getPositions}, targetPos),\
     {target.getPositions},\
     sub(\
@@ -140,16 +117,13 @@ idx = {vecToString(curPos)}
 ; or overwrite the target position if its contents
 ; is with target positions?
 {setTPos(idx, if(\
-  contains(\
-    {getTPos(idx)}, \
-    sub(\
-      {target.getPositions}, \
-      index({target.getPositions}, targetPos, 0) + 5, \
-      4\
-    )\
-  ) || not(contains({target.getPositions}, targetPos)),\
-  targetPos,\
-  {getTPos(idx)}\
+  {getTPos(idx)} != sub(\
+    {target.getPositions},\
+    index({target.getPositions}, targetPos, 0) + 5,\
+    4\
+  ) && contains({target.getPositions}, targetPos),\
+  {getTPos(idx)},\
+  targetPos\
 ))}
 
 ; Update our curPos to the next tile
@@ -164,10 +138,9 @@ curPos -= {nextDir({getField(idx)})}
 ; our way back to the starting position if we have,
 ; move back to loop2 if there's more loot positions to add
 goto(if(\
-  contains("S", {getField({vecToString(curPos)})}),\
-  if(contains("", lootPositions), end, loop2),\
-  innerLoop2\
+  {getField({vecToString(curPos)})} != "S",\
+  innerLoop2,\
+  if(lootPositions != "", loop2, end)\
 ))
-; contains("", lootPositions) is true only when len(lootPositions) == 0
 
 end:

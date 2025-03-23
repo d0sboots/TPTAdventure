@@ -12,11 +12,15 @@
 
 :local double maxDifficultyInit
 :local double difficulty
+:local double inc
+:local double pos
 ; 
 :local string market_data
 :local string farm_dir
 :local string dir
 ; 
+:local bool square_up
+
 :local bool parity
 :local bool needs_something
 :local bool skipped
@@ -32,10 +36,31 @@ key.{down}()
 ; Increment/Decrement maxDifficulty by 1
 ; 
 key.{kill}()
-; Kill all enemies and shut down the script after
+; Shut down the AI and enters farm keys to
+; top us off, then, it terminates the program
 
 isopen("arcade")
 
+; Square pattern
+; RULDRU
+; pos = if(\
+  x(adventure.playerCoords()) == if(pos % 4 >= 2, 127 - i, 127 + i) &&\
+  y(adventure.playerCoords()) == if(\
+    pos > 2, \
+    min(127 + i, 127 + i * (pos % 5)), \
+    max(127 - i, 127 - i * (pos % 5))\
+  ), \
+  (pos + 1) % 6, \
+  pos\
+)
+; direction = sub("RULD", pos % 4, 1)
+
+; diamond pattern
+; Player spawns in the middle of the map at 127.0, 127.0
+; going R = x + 1.0
+; going U = y + 1.0
+; going L = x - 1.0
+; going D = y - 1.0
 #nextRoomLower if(\
   x(adventure.roomCoords()) < 127.0 && \
   y(adventure.roomCoords()) >= 127.0,\
@@ -61,56 +86,60 @@ isopen("arcade")
   1\
 )
 
+#count.entities(entity) adventure.countEntities("{entity}")
+; helper macro to shorten the process for counting entities
+
 ; ======== Start init code ==============
 
 ; This exists as a local variable solely to provide users
 ; an easy place to customize it, after it's been imported.
 maxDifficultyInit = 81.0
 
-; Initialize all our global variables.
-; This is called by farm_keys when key.{kill} is pressed
-; 
-; This call is in charge of propperly initializing all global variables
-; 
+; can replace previous init with this to imitate a full completion
+;maxDifficultyInit = {cur_difficulty(1.0)}
 
-; Check the variable hider to see if this is first execution or not.
+; Initialize all our global variables.
+; Make sure that maxDifficulty is at least 2.
+; if it's 1 it gets stuck in an endless loop
+; in the starting room for some reason
 leon.adventure.maxDifficulty = if(\
-  contains("", {hide_blocker}) || {contains.key({reinit})},\
-  maxDifficultyInit,\
+  leon.adventure.maxDifficulty < 2.0 || impulse() == "key.{reinit}",\
+  max(2.0, maxDifficultyInit),\
   if(\
     contains("key.{start}|key.{kill}", impulse()),\
     leon.adventure.maxDifficulty,\
     if(\
-      {contains.key({up})}, \
+      impulse() == "key.{up}", \
       leon.adventure.maxDifficulty + 1.0,\
-      leon.adventure.maxDifficulty - 1.0\
+      max(2.0, leon.adventure.maxDifficulty - 1.0)\
     )\
   )\
 )
+
 ; This variable also begins the variable hiding block with its name.
 {target.setPos({target.getPositions})}
 
-; These are the impulse keys that don't mean key.{kill}
-:const string non_kill "key.{start}key.{up}key.{down}key.{reinit}"
 ; 
 ; Change the state of the script.
 ; If we use key.{kill}, our state must be off, otherwise, we
 ; try to toggle our state.
 {state.set(\
-  contains(non_kill, impulse()) && \
-  {state.get} != {contains.key({start})}\
+  impulse() != "key.{kill}" && \
+  {state.get} != (impulse() == "key.{start}")\
 )}
 
 leon.adventure.path = leon.adventure.path
 global.string.set(hide_block, "</size>")
 
 goto(if(\
-  {contains.key({start})} && {state.get}, \
+  impulse() == "key.{kill}" || \
+  impulse() == "key.{start}" && {state.get}, \
   start, \
-  if({contains.key({kill})}, killer_loop, end)\
+  end\
 ))
 
 ; ======== Continuous loop code ==============
+
 
 #can_leech adventure.hasItem("leechSword")
 #can_cast adventure.hasItem("bookSpells")
@@ -127,8 +156,10 @@ goto(if(\
 
 ; calculate how much health an elite has
 #elite_health d2i(floor(difficulty * 0.01 + 1.0))
+; 
 ; calculate how much damage an elite deals
 #elite_dmg d2i(ceil(ceil(difficulty * 0.39) * 1.5))
+; 
 ; calculate how much damage an elite will actually deal to us
 #elite_trueDMG {elite_health} * ({elite_dmg} - adventure.playerArmor())
 
@@ -136,13 +167,11 @@ next:
 ; partity is in charge of making sure we never exit farm keys until
 ; we're back in the room we started in
 parity = not(parity)
-leon.adventure.path = farm_dir
-executesync("{package}:follow path")
+adventure.move({nextDir(farm_dir)})
 
 start:
 difficulty = {cur_difficulty(0.0)}
 needs_something = {survivable(difficulty)} && ({any_needs})
-; "U    L    R    D" = "{dir_spaced(4)}"
 ; "XU   L   R   D"   = "X{dir_spaced(3)}"
 ; " 918 09  189 09"
 :const string exit_coord " 918 09  189 09"
@@ -150,7 +179,7 @@ needs_something = {survivable(difficulty)} && ({any_needs})
 farm_dir = sub("X{dir_spaced(3)}", index(exit_coord, {exit_concat}, 0), 1)
 ; get our exit direction
 
-skipped = contains("UDLR", farm_dir) && (\
+skipped = contains("ULRD", farm_dir) && (\
   (adventure.countEntities("Elite") > 0) != \
   (needs_something && {needs_bombs}) && (\
     adventure.countEntities("Elite") > 0 || \
@@ -179,9 +208,6 @@ goto(if(skipped, next, killer_loop))
 #anyEnemies {enemyInDir(0.0, 1.0)} || {enemyInDir( 0.0,-1.0)} ||\
             {enemyInDir(1.0, 0.0)} || {enemyInDir(-1.0, 0.0)}
 
-#count.entities(entity) adventure.countEntities("{entity}")
-; helper macro to shorten the process for counting entities
-
 killer_wait:
 adventure.wait()
 ; wait in our curent position
@@ -194,19 +220,15 @@ adventure.move({enemyDirection})
 
 killer_loop:
 goto(if(\
-  {state.get} || {contains.key({kill})},\
+  isopen("arcade") && {state.get} || impulse() == "key.{kill}",\
   if(\
     max({count.entities(Enemy)}, {count.entities(Elite)}) > 0,\
     if({anyEnemies}, attack, killer_wait),\
     if(\
-      {contains.key({kill})}, \
-      end,\
-      if(\
-        contains({dir_list}, farm_dir) && \
-          (needs_something && ({any_needs}) || parity || skipped),\
-        next,\
-        main_loop\
-      )\
+      contains("ULRD", farm_dir) &&\
+        (parity || needs_something && ({any_needs})),\
+      next,\
+      if(impulse() == "key.{kill}", end, main_loop)\
     )\
   ),\
   end\
@@ -235,9 +257,8 @@ leon.adventure.maxDifficulty = if(\
   leon.adventure.maxDifficulty\
 )
 
-; using contains here saves 1 block, but you might not like it
 dir = if(\
-  difficulty != 1.0 || contains("", dir),\
+  difficulty != 1.0 || dir == "",\
   {condRotateLeft({survivable(difficulty)}, {nextRoomLower})},\
   {rotateLeft(dir)}\
 )
@@ -252,23 +273,24 @@ dir = if(\
 ; and variable-length data. The size and position are for locating the
 ; *next* item.
 #data_table {lua(\
-  local acc = {};\
+  local market = {};\
   local items = table.pack(\
-    "impaler", "hammer", "bootsPhasing", "leechSword", "manaReaver", \
-    "eodArmor", "thornsArmor", "holyBomb", "bookSpells"\
+    "impaler", "hammer", "bootsPhasing",\
+    "leechSword", "manaReaver", "thornsArmor", \
+    "holyBomb", "eodArmor", "bookSpells"\
   );\
-  local i = 3\
   for item = 1, #items do\
-    acc[i] = items[item];\
-    i = i + 3;\
+    market[item * 3] = items[item];\
   end\
   local pos = 0;\
-  for j = 3, i-3, 3 do\
-    pos = pos + 5 + #acc[j];\
-    acc[j - 2] = string.format("%02d", 5 + #(acc[j + 3] or ""));\
-    acc[j - 1] = string.format("%03d", pos);\
+  for item = 1, #items do\
+    local offset = item * 3;\
+    pos = pos + 5 + #market[offset];\
+    local next_item = #(market[offset + 3] or "");\
+    market[offset - 2] = string.format("%02d", 5 + next_item);\
+    market[offset - 1] = string.format("%03d", pos)\
   end\
-  return table.concat(acc)\
+  return table.concat(market)\
 )}
 
 market_loop:
@@ -277,6 +299,7 @@ market_data = sub(\
   s2i(sub(market_data, 2, 3), 0),\
   s2i(sub(market_data, 0, 2), 12)\
 )
+
 ; Loop until we find an unbought item. By the nature of hasItem, it will
 ; always return false for the empty string at the end of the loop, so we
 ; don't need an explicit end check.
@@ -294,6 +317,7 @@ adventure.buyMarketItem(sub(market_data, 5, 99))
 ; "0918 0009 1809 0900"
 :const string exit_idx "0918 0009 1809 0900"
 {target.setPos(sub(exit_idx, index("{dir_spaced(4)}", dir, 0), 4) . ":")}
+; 
 
 executesync("{package}:analyze loot")
 find_loot:
@@ -301,15 +325,11 @@ executesync("{package}:find path")
 executesync("{package}:follow path")
 {target.setPos(sub({target.getPositions}, 5, 9999))}
 
-; since every target position ends with `:`,
-; len({target.getPositions}) > 0 returns true
-; when our targetPositions has the string `:`
-gotoif(find_loot, {state.get} && contains({target.getPositions}, ":"))
+; keep looping until we no longer have any target positions
+gotoif(find_loot, {state.get} && {target.getPositions} != "")
 
-leon.adventure.path = dir
-executesync("{package}:follow path")
+adventure.move({nextDir(dir)})
 
-; we loop as long as arcade is open and we're not shut down
 gotoif(start, isopen("arcade") && {state.get})
 
 end:

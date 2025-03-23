@@ -18,7 +18,10 @@
 leon.adventure.path = ""
 cantPhase = not(adventure.hasItem("bootsPhasing"))\
 || 0 < max(\
-  adventure.countEntities("Elite"),\
+  max(\
+    adventure.countEntities("Elite"),\
+    adventure.countEntities("Chest")\
+  ),\
   adventure.countEntities("Enemy")\
 )
 queue = {vecToString(adventure.playerPos())} . "S:"

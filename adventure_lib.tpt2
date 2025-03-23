@@ -31,17 +31,13 @@
 ; -1 => " R"
 #dir_spaced(space) {lua(\
   local directions = {};\
-  local space = {space} < 0 and {space} - 1 or {space} + 1;\
-  local spacer = string.format("%%%ss", 0 - space);\
-  --[[string.format("%%%ss", 2) = %2s]]\
+  local space = {space} < 0 and 1 - {space} or -1 - {space};\
+  local spacer = "%" .. space .. "s";\
   for i = 1, #{dir_list} do\
     directions[i] = spacer:format(string.sub({dir_list}, i, i));\
   end\
   return table.concat(directions);\
 )}
-
-; Detect which impulse the script was triggered by
-#contains.key(key) contains(impulse(), "key.{key}")
 
 ; The name of the variable that stores "target positions" state.
 ; Doubles as the start of the variable-hiding block.
