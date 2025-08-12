@@ -1,4 +1,12 @@
-#package Adventure v3.3
+#package Adventure v3.4
+
+; Key assignments. You can edit these here, or you can edit them later in the
+; generated script (but you will have more places to modify).
+#start r
+#kill k
+#reinit i
+#increment u
+#decrement j
 
 ; The name of the variable that stores "target positions" state.
 ; Doubles as the start of the variable-hiding block.

@@ -1,8 +1,7 @@
 :import adventure_lib
 :name {package}:find loot
+:budget_cap max
 
-:global int turbo.cycles.max
-:global int turbo.cycles
 :global int leon.adventure.maxDifficulty
 :global bool leon.adventure.running
 :global string leon.adventure.path
@@ -10,20 +9,23 @@
 
 :local string market_data
 
-key.u()
-key.j()
+key.{decrement}()
+key.{increment}()
 
 isopen("arcade")
 
-; Initialize variables so that pressing "u" or "j" after resetting AI
+; Initialize variables so that pressing "{increment}" or "{decrement}" after resetting AI
 ; doesn't increment from 0
 executesync(if(\
   contains(impulse(), "key."),\
   "{package}:init",\
   "{package}:xNOOPx"\
 ))
-leon.adventure.maxDifficulty +=\
-  if(contains(impulse(), "key.j"), -1, if(contains(impulse(), "key.u"), 1, 0))
+leon.adventure.maxDifficulty += if(\
+  contains(impulse(), "key.{decrement}"),\
+  -1,\
+  if(contains(impulse(), "key.{increment}"), 1, 0)\
+)
 gotoif(end, contains(impulse(), "key."))
 
 ; Buy the first market item in our priority list that we don't have.
@@ -71,15 +73,13 @@ global.string.set({target_pos_var}, sub(\
     4\
 ) . ":")
 
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 executesync("{package}:analyze loot")
 loop:
 executesync("{package}:find path")
 executesync("{package}:follow path")
 global.string.set({target_pos_var}, sub({target_positions}, 5, 99999))
-gotoif(loop, len({target_positions}) > 0 && leon.adventure.running)
+gotoif(loop, {target_positions} != "" && leon.adventure.running)
 
 leon.adventure.path = leon.adventure.room_direction
 executesync("{package}:follow path")
 end:
-wait(0.)

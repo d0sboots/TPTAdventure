@@ -1,5 +1,6 @@
 :import adventure_lib
 :name {package}:refine path
+:budget_cap max
 
 :global string leon.adventure.path
 
@@ -51,10 +52,9 @@ goto(if(\
   stepCount >= len(leon.adventure.path),\
   end,\
   if(\
-    adventure.entityType(curPos + {nextDir({curDirection})}) != "Rock" || adventure.hasItem("hammer"),\
+    adventure.hasItem("hammer") || adventure.entityType(curPos + {nextDir({curDirection})}) != "Rock",\
     nextTile,\
     rock\
   )\
 ))
 end:
-wait(0.)

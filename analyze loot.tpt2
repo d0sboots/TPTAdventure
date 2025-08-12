@@ -1,5 +1,6 @@
 :import adventure_lib
 :name {package}:analyze loot
+:budget_cap max
 
 :local string queue
 :local string idx
@@ -101,4 +102,3 @@ goto(if(\
 ))
 
 end:
-wait(0.)

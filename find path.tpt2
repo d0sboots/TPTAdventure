@@ -1,15 +1,13 @@
 :import adventure_lib
 :name {package}:find path
+:budget_cap max
 
-:global int turbo.cycles.max
-:global int turbo.cycles
 :global string leon.adventure.path
 
 :local vector curPos
 :local string queue
 :local string idx
 :local string dir
-:local string path
 :local bool cantPhase
 
 #setField(index, value) lss("_f" . {index}, {value})
@@ -21,12 +19,13 @@
 ; plus 1 for setField on the explored square itself.) This comes to 3809 cycles,
 ; and we add a few hundred extra for additional loops needed to finish before
 ; the frame ends.
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4500)
+; The above calculation mattered more in the turbo-exec days, but it's left
+; for the purposes of determining ballpark efficiency.
 leon.adventure.path = ""
 ; Determine whether the boots of phasing can be used, which will adjust our
 ; pathfinding. This is only used in one place, but pre-calculating this expression
 ; saves evaluation nodes inside a hot loop.
-cantPhase = false == adventure.hasItem("bootsPhasing")\
+cantPhase = not(adventure.hasItem("bootsPhasing"))\
 || 0 < max(\
   max(\
     max(\
@@ -72,14 +71,12 @@ idx = sub(queue, 0, 4)
 ; early in the string.
 #incstr(x) sub("0102:0304050607080910111213141516171819", index("0001:0203040506070809101112131415161718", {x}, 0), 2)
 #decstr(x) sub("9900:0102030405060708091011121314151617", index("0001:0203040506070809101112131415161718", {x}, 0), 2)
-; The parenthesis are here to adjust the concat-tree for better compression,
-; they don't affect the result at all.
 queue = sub(queue, 6, 99999) . if(\
   contains({getField(idx)}, {firstElementDir}), (\
-    (sub(idx, 0, 2) . {incstr(sub(idx, 2, 2))} . "U:") .\
-    (sub(idx, 0, 2) . {decstr(sub(idx, 2, 2))} . "D:") .\
-    ({incstr(sub(idx, 0, 2))} . sub(idx, 2, 2) . "R:") .\
-    ({decstr(sub(idx, 0, 2))} . sub(idx, 2, 2) . "L:")\
+    sub(idx, 0, 2) . {incstr(sub(idx, 2, 2))} . "U:" .\
+    sub(idx, 0, 2) . {decstr(sub(idx, 2, 2))} . "D:" .\
+    {incstr(sub(idx, 0, 2))} . sub(idx, 2, 2) . "R:" .\
+    {decstr(sub(idx, 0, 2))} . sub(idx, 2, 2) . "L:"\
   ),\
   ""\
 )
@@ -90,11 +87,13 @@ queue = sub(queue, 6, 99999) . if(\
 ; Although we can check the high bounds by looking for "18", the low bounds require
 ; checking individual coordinates because "00" could otherwise match inside "1004"
 ; and similar.
+; Note the different check conditions here: "idx", which contains the previous position,
+; vs sub(queue, 0, 4) which is the *next* position.
 goto(if(\
   contains(idx, sub({target_positions}, 0, 4)),\
   l2start,\
   if(\
-    contains("UDLRS", {getField(sub(queue, 0, 4))})\
+    {getField(sub(queue, 0, 4))} != ""\
       || adventure.isWall({strToVec(queue)}) && (\
         cantPhase ||\
         contains(sub(queue, 0, 2), "00") ||\
@@ -116,4 +115,3 @@ dir = {getField(idx)}
 gotoif(loop2, dir != "S")
 
 executesync("{package}:refine path")
-wait(0.0)
