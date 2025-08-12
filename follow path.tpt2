@@ -36,23 +36,27 @@ waitChest = contains(adventure.entityType(adventure.playerPos() + nextMove), "Ch
 
 move2:
 adventure.move(nextMove)  ; This is a no-op for invalid (0,0) moves
+hold:
 waitframe()
 
 loop:
 ; This uses the spacing of unused values in the index expression to be equivalent
 ; to lines to skip *backward*. This is much cheaper than having a nested ternary.
 ; index returns -1 for the fallthrough case. (UDLR -> move)
-goto(if(\
-  stepCount < len(leon.adventure.path) && leon.adventure.running && isopen("arcade"),\
+gotoif(\
   if(\
-    contains("BW", {nextDirection})\
-      || x(curPos) != x(adventure.playerPos())\
-      || y(curPos) != y(adventure.playerPos())\
-      || waitChest && adventure.entityType(adventure.playerPos() + nextMove) == "",\
-    (move - 1) - index("W B", {nextDirection}, 0),\
-    move2\
+    adventure.playerHealth() == 0,\
+    hold,\
+    if(\
+      contains("BW", {nextDirection})\
+        || x(curPos) != x(adventure.playerPos())\
+        || y(curPos) != y(adventure.playerPos())\
+        || waitChest && adventure.entityType(adventure.playerPos() + nextMove) == "",\
+      (move - 1) - index("W B", {nextDirection}, 0),\
+      move2\
+    )\
   ),\
-  end\
-))
+  stepCount < len(leon.adventure.path) && leon.adventure.running && isopen("arcade")\
+)
 
 end:

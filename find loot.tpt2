@@ -175,7 +175,7 @@ main_loop:
 executesync("{package}:find path")
 executesync("{package}:follow path")
 global.string.set({target_pos_var}, sub({target_positions}, 5, 99999))
-gotoif(main_loop, {target_positions} != "" && leon.adventure.running)
+gotoif(main_loop, {target_positions} != "" && leon.adventure.running && adventure.playerHealth() > 0)
 
 leon.adventure.path = leon.adventure.room_direction
 executesync("{package}:follow path")
