@@ -32,6 +32,19 @@ isopen("arcade")
     )\
   )\
 )
+#squarePattern if(\
+  x(adventure.roomCoords()) <= min(y(adventure.roomCoords()), 254.0 - y(adventure.roomCoords())),\
+  "U",\
+  if(\
+    y(adventure.roomCoords()) > max(x(adventure.roomCoords()), 254.0 - x(adventure.roomCoords())),\
+    "R",\
+    if(\
+      x(adventure.roomCoords()) >= max(y(adventure.roomCoords()), 255.0 - y(adventure.roomCoords())),\
+      "D",\
+      "L"\
+    )\
+  )\
+)
 #rotateLeft(x) sub("LDRU", index("ULDR", {x}, 0), 1)
 ; Conditionally rotate the direction "x" to the left.
 ; The benefit of this macro is that it only expands "x" once.
@@ -157,10 +170,16 @@ leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if(\
   2,\
   0\
 )
+; Use clear-everything pattern if the user has the golden armor and
+; sets the maxDifficulty high enough.
 leon.adventure.room_direction = if(\
-  difficulty == 1. && leon.adventure.room_direction != "",\
-  {rotateLeft(leon.adventure.room_direction)},\
-  {condRotateLeft({survivable(difficulty)}, {nextRoomLower})}\
+  leon.adventure.maxDifficulty >= 128 && adventure.playerArmor() == 99,\
+  {squarePattern},\
+  if(\
+    difficulty == 1. && leon.adventure.room_direction != "",\
+    {rotateLeft(leon.adventure.room_direction)},\
+    {condRotateLeft({survivable(difficulty)}, {nextRoomLower})}\
+  )\
 )
 
 last_exec:
